@@ -56,14 +56,14 @@ def increase(start, increment, max):
     return result
 
 
-def project(p, cameraX, cameraY, cameraZ, cameraDepth, width, height, roadWidth):
-    p.camera.x = (p.world.x or 0) - cameraX
-    p.camera.y = (p.world.y or 0) - cameraY
-    p.camera.z = (p.world.z or 0) - cameraZ
-    p.screen.scale = cameraDepth / p.camera.z
-    p.screen.x = math.round((width / 2) + (p.screen.scale * p.camera.x * width / 2))
-    p.screen.y = math.round((height / 2) - (p.screen.scale * p.camera.y * height / 2))
-    p.screen.w = math.round((p.screen.scale * roadWidth * width / 2))
+def project(p, camera_x, camera_y, camera_z, camera_depth, width, height, road_width):
+    p.camera.x = (p.world.x if 'x' in p.world else 0) - camera_x
+    p.camera.y = (p.world.y if 'y' in p.world else 0) - camera_y
+    p.camera.z = (p.world.z if 'z' in p.world else 0) - camera_z
+    p.screen.scale = camera_depth / p.camera.z
+    p.screen.x = round((width / 2) + (p.screen.scale * p.camera.x * width / 2))
+    p.screen.y = round((height / 2) - (p.screen.scale * p.camera.y * height / 2))
+    p.screen.w = round((p.screen.scale * road_width * width / 2))
     return
 
 
@@ -78,6 +78,7 @@ def overlap(x1, w1, x2, w2, percent=1.0):
 
 if __name__ == '__main__':
     print 'util.py'
+    from map import Map
     # print timestamp()
     # print limit(2, 0, 3)
     # print random_int(0, 9)

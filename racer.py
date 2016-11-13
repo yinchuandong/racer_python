@@ -1,5 +1,6 @@
 import random
 import sys
+import math
 
 import pygame
 from pygame.locals import *
@@ -7,18 +8,13 @@ from pygame.locals import *
 from map import Map
 import util
 import render
+from common import *
 
 
 FPS = 30
 SCREEN_WIDTH = 1024
 SCREEN_HEIGHT = 768
 
-# Define the colors we will use in RGB format
-BLACK = (0, 0, 0)
-WHITE = (255, 255, 255)
-BLUE = (0, 0, 255)
-GREEN = (0, 255, 0)
-RED = (255, 0, 0)
 
 ROAD = Map()
 ROAD.LENGTH = Map({
@@ -50,16 +46,20 @@ class Racer(object):
         self.tree_offset = 0
         self.segments = []
         self.cars = []
+        self.background = None
+        self.sprites = None
+        self.resolution = SCREEN_HEIGHT / 480.0
         self.road_width = 2000
         self.segment_length = 200
         self.rumble_length = 3
+        self.track_length = None
         self.lanes = 3
         self.field_of_view = 100
         self.camera_height = 1000
-        self.camera_depth = None
+        self.camera_depth = 1.0 / math.tan((self.field_of_view / 2.0) * math.pi / 180)
         self.draw_distance = 300
         self.player_x = 0
-        self.player_x = None
+        self.player_z = self.camera_height * self.camera_depth
         self.fog_density = 5
         self.position = 0  # current camera z
         self.speed = 0
@@ -80,15 +80,16 @@ class Racer(object):
         # pygame.draw.rect(self.screen, (0,0,255), (200, 150, 100, 50))
         self.screen.fill(WHITE)
         # pygame.draw.polygon(self.screen, BLACK, [[100, 100], [0, 200], [200, 200]], 5)
-        render.polygon(self.screen, 0, 0, 0, 100, 100, 100, 100, 0, BLACK)
+        # render.polygon(self.screen, 0, 0, 0, 100, 100, 100, 100, 0, BLACK)
         return
 
     def last_y(self):
         length = len(self.segments)
-        return 0 if length == 0 else self.segments[length - 1].p2.word.y
+        return 0 if length == 0 else self.segments[length - 1].p2.world.y
 
     def find_segment(self, z):
-        return
+        index = int(math.floor(float(z) / self.segment_length) % len(self.segments))
+        return self.segments[index]
 
     def add_segment(self, curve, y):
         n = len(self.segments)
@@ -96,24 +97,23 @@ class Racer(object):
         segment.index = n
 
         segment.p1 = Map()
-        segment.p1.word = Map()
-        segment.p1.word.y = self.last_y()
-        segment.p1.word.z = n * self.segment_length
+        segment.p1.world = Map()
+        segment.p1.world.y = self.last_y()
+        segment.p1.world.z = n * self.segment_length
         segment.p1.camera = Map()
         segment.p1.screen = Map()
 
         segment.p2 = Map()
-        segment.p2.word = Map()
-        segment.p2.word.y = y
-        segment.p2.word.z = n * self.segment_length
+        segment.p2.world = Map()
+        segment.p2.world.y = y
+        segment.p2.world.z = (n + 1) * self.segment_length
         segment.p2.camera = Map()
         segment.p2.screen = Map()
 
         segment.curve = curve
         segment.sprites = []
         segment.cars = []
-        # todo:
-        segment.color = math.floor(float(n) / self.rumble_length)
+        segment.color = COLORS.DARK if math.floor(float(n) / self.rumble_length) == 0 else COLORS.LIGHT
 
         # todo: add color
         self.segments.append(segment)
@@ -135,11 +135,54 @@ class Racer(object):
 
     def addStraight(self, num=20):
         self.add_road(num, num, num, 0, 0)
+        # todo:
+        self.track_length = len(self.segments) + self.segment_length
         return
 
     def render_sprite(self):
-        for n in range(len(self.segments)):
-            segment = self.segments[n]
+        base_segment = self.find_segment(self.position)
+        base_percent = util.percent_remaining(self.position, self.segment_length)
+        player_segment = self.find_segment(self.position + self.player_z)
+        player_percent = util.percent_remaining(self.position + self.player_z, self.segment_length)
+        player_y = util.interpolate(player_segment.p1.world.y, player_segment.p2.world.y, player_percent)
+        maxy = SCREEN_HEIGHT
+
+        x = 0
+        dx = - (base_segment.curve * base_percent)
+
+        # print len(self.segments)
+        # import sys
+        # sys.exit()
+        for n in range(self.draw_distance):
+            segment = self.segments[(base_segment.index + n) % len(self.segments)]
+            # todo: <= should be <
+            segment.looped = segment.index <= base_segment.index
+            segment.fog = util.exponential_fog(float(n) / self.draw_distance, self.fog_density)
+            segment.clip = maxy
+
+            # print segment.index, base_segment.index
+            # print self.position - (self.track_length if segment.looped else 0),
+            util.project(
+                segment.p1,
+                (self.player_x * self.road_width) - x,
+                player_y + self.camera_height,
+                self.position - (self.track_length if segment.looped else 0),
+                self.camera_depth,
+                SCREEN_WIDTH,
+                SCREEN_HEIGHT,
+                self.road_width
+            )
+            util.project(
+                segment.p2,
+                (self.player_x * self.road_width) - x - dx,
+                player_y + self.camera_height,
+                self.position - (self.track_length if segment.looped else 0),
+                self.camera_depth,
+                SCREEN_WIDTH,
+                SCREEN_HEIGHT,
+                self.road_width
+            )
+
             render.segment(
                 self.screen, SCREEN_WIDTH, 3,
                 segment.p1.screen.x,
@@ -148,7 +191,7 @@ class Racer(object):
                 segment.p2.screen.x,
                 segment.p2.screen.y,
                 segment.p2.screen.w,
-                0,
+                segment.fog,
                 segment.color
             )
         return
