@@ -29,7 +29,7 @@ ROAD.CURVE = Map({
     'NONE': 0, 'EASY': 2, 'MEDIUM': 4, 'HARD': 6
 })
 
-SPRITE = []
+SPRITES = []
 
 
 class Racer(object):
@@ -39,8 +39,8 @@ class Racer(object):
         self.fps_clock = pygame.time.Clock()
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         pygame.display.set_caption('racer')
-        global SPRITE
-        SPRITE = preload()
+        global SPRITES
+        SPRITES = preload()
         self.reset()
 
         self.img = pygame.image.load('images/sprites/billboard01.png')
@@ -130,6 +130,10 @@ class Racer(object):
         # print self.segments
         return
 
+    def add_sprite(self, n, sprite, offset):
+        self.segments[n].sprites.append(Map({'source': sprite, 'offset': offset}))
+        return
+
     def add_road(self, enter, hold, leave, curve, y):
         start_y = self.last_y()
         end_y = start_y + int(y) * self.segment_length
@@ -212,8 +216,8 @@ class Racer(object):
         self.add_down_hill_to_end()
 
         # todo
-        # resetSprites();
-        # resetCars();
+        self.reset_sprites()
+        self.reset_cars()
 
         self.segments[self.find_segment(self.player_z).index + 2].color = COLORS.START
         self.segments[self.find_segment(self.player_z).index + 3].color = COLORS.START
@@ -222,6 +226,38 @@ class Racer(object):
             self.segments[len(self.segments) - 1 - n].color = COLORS.FINISH
         self.track_length = len(self.segments) * self.segment_length
 
+        return
+
+    def reset_sprites(self):
+        self.add_sprite(20, SPRITES.BILLBOARD07, -1)
+        self.add_sprite(40, SPRITES.BILLBOARD06, -1)
+        self.add_sprite(60, SPRITES.BILLBOARD08, -1)
+        self.add_sprite(80, SPRITES.BILLBOARD09, -1)
+        self.add_sprite(100, SPRITES.BILLBOARD01, -1)
+        self.add_sprite(120, SPRITES.BILLBOARD02, -1)
+        self.add_sprite(140, SPRITES.BILLBOARD03, -1)
+        self.add_sprite(160, SPRITES.BILLBOARD04, -1)
+        self.add_sprite(180, SPRITES.BILLBOARD05, -1)
+
+        self.add_sprite(240, SPRITES.BILLBOARD07, -1.2)
+        self.add_sprite(240, SPRITES.BILLBOARD06, 1.2)
+        self.add_sprite(len(self.segments) - 25, SPRITES.BILLBOARD07, -1.2)
+        self.add_sprite(len(self.segments) - 25, SPRITES.BILLBOARD06, 1.2)
+
+        # todo: add palm tree
+
+        for n in range(250, 1000, 5):
+            self.add_sprite(n, SPRITES.COLUMN, 1.1)
+            self.add_sprite(n + util.random_int(0, 5), SPRITES.TREE1, -1 - (random.random() * 2))
+            self.add_sprite(n + util.random_int(0, 5), SPRITES.TREE2, -1 - (random.random() * 2))
+
+        for n in range(200, len(self.segments), 3):
+            self.add_sprite(n, util.random_choice(SPRITES.PLANTS),
+                            util.random_choice([1, -1]) * (2 + random.random() * 5))
+        # todo: add biliboard
+        return
+
+    def reset_cars(self):
         return
 
     def render_sprite(self):
@@ -271,6 +307,11 @@ class Racer(object):
             x = x + dx
             dx = dx + segment.curve
 
+            if ((segment.p1.camera.z <= self.camera_depth) or  # behind us
+                (segment.p2.screen.y >= segment.p1.screen.y) or  # back face cull
+                    (segment.p2.screen.y >= maxy)):  # clip by hill
+                continue
+
             render.segment(
                 self.screen, SCREEN_WIDTH, 3,
                 segment.p1.screen.x,
@@ -284,6 +325,12 @@ class Racer(object):
             )
 
             maxy = segment.p1.screen.y
+
+        # end for
+        
+        # for n in reversed(range(self.draw_distance - 1)):
+            # print 1
+
         return
 
 
@@ -317,3 +364,4 @@ def test():
 if __name__ == '__main__':
     main()
     # test()
+    # print list(reversed(range(10)))
