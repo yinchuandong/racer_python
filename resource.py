@@ -1,0 +1,3 @@
+impoprt pygame
+
+
