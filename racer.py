@@ -9,6 +9,7 @@ from pygame.locals import *
 from map import Map
 import util
 import render
+from resource import preload
 from common import *
 
 
@@ -28,6 +29,8 @@ ROAD.CURVE = Map({
     'NONE': 0, 'EASY': 2, 'MEDIUM': 4, 'HARD': 6
 })
 
+SPRITE = []
+
 
 class Racer(object):
 
@@ -36,7 +39,14 @@ class Racer(object):
         self.fps_clock = pygame.time.Clock()
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         pygame.display.set_caption('racer')
+        global SPRITE
+        SPRITE = preload()
+        self.reset()
 
+        self.img = pygame.image.load('images/sprites/billboard01.png')
+        return
+
+    def reset(self):
         self.step = 1.0 / FPS
         self.centrifugal = 0.3
         self.sky_speed = 0.001
@@ -72,7 +82,6 @@ class Racer(object):
         self.off_road_limit = self.max_speed / 4
         self.total_cars = 200
 
-        self.img = pygame.image.load('images/sprites/billboard01.png')
         self.reset_road()
         return
 
