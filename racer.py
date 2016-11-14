@@ -3,6 +3,7 @@ import sys
 import math
 
 import pygame
+from pygame import gfxdraw
 from pygame.locals import *
 
 from map import Map
@@ -71,8 +72,8 @@ class Racer(object):
         self.off_road_limit = self.max_speed / 4
         self.total_cars = 200
 
-        self.update()
         self.img = pygame.image.load('images/sprites/billboard01.png')
+        self.reset_road()
         return
 
     def update(self):
@@ -113,7 +114,7 @@ class Racer(object):
         segment.curve = curve
         segment.sprites = []
         segment.cars = []
-        segment.color = COLORS.DARK if math.floor(float(n) / self.rumble_length) == 0 else COLORS.LIGHT
+        segment.color = COLORS.DARK if math.floor(float(n) / self.rumble_length) % 2 == 0 else COLORS.LIGHT
 
         # todo: add color
         self.segments.append(segment)
@@ -133,10 +134,85 @@ class Racer(object):
                              util.ease_in_out(start_y, end_y, (enter + hold + n) / total))
         return
 
-    def addStraight(self, num=20):
+    def add_straight(self, num=ROAD.LENGTH.MEDIUM):
         self.add_road(num, num, num, 0, 0)
         # todo:
         self.track_length = len(self.segments) + self.segment_length
+        return
+
+    def add_hill(self, num=ROAD.LENGTH.MEDIUM, height=ROAD.HILL.MEDIUM):
+        self.add_road(num, num, num, 0, height)
+        return
+
+    def add_curve(self, num=ROAD.LENGTH.MEDIUM, curve=ROAD.CURVE.MEDIUM, height=ROAD.HILL.MEDIUM):
+        self.add_road(num, num, num, curve, height)
+        return
+
+    def add_low_rolling_hills(self, num=ROAD.LENGTH.MEDIUM, height=ROAD.HILL.MEDIUM):
+        self.add_road(num, num, num, 0, height / 2)
+        self.add_road(num, num, num, 0, -height)
+        self.add_road(num, num, num, ROAD.CURVE.EASY, height)
+        self.add_road(num, num, num, 0, 0)
+        self.add_road(num, num, num, -ROAD.CURVE.EASY, height / 2)
+        self.add_road(num, num, num, 0, 0)
+        return
+
+    def add_s_curves(self):
+        self.add_road(ROAD.LENGTH.MEDIUM, ROAD.LENGTH.MEDIUM, ROAD.LENGTH.MEDIUM, -ROAD.CURVE.EASY, ROAD.HILL.NONE)
+        self.add_road(ROAD.LENGTH.MEDIUM, ROAD.LENGTH.MEDIUM, ROAD.LENGTH.MEDIUM, ROAD.CURVE.MEDIUM, ROAD.HILL.MEDIUM)
+        self.add_road(ROAD.LENGTH.MEDIUM, ROAD.LENGTH.MEDIUM, ROAD.LENGTH.MEDIUM, ROAD.CURVE.EASY, -ROAD.HILL.LOW)
+        self.add_road(ROAD.LENGTH.MEDIUM, ROAD.LENGTH.MEDIUM, ROAD.LENGTH.MEDIUM, -ROAD.CURVE.EASY, ROAD.HILL.MEDIUM)
+        self.add_road(ROAD.LENGTH.MEDIUM, ROAD.LENGTH.MEDIUM, ROAD.LENGTH.MEDIUM, -ROAD.CURVE.MEDIUM, -ROAD.HILL.MEDIUM)
+        return
+
+    def add_bumps(self):
+        self.add_road(10, 10, 10, 0, 5)
+        self.add_road(10, 10, 10, 0, -2)
+        self.add_road(10, 10, 10, 0, -5)
+        self.add_road(10, 10, 10, 0, 8)
+        self.add_road(10, 10, 10, 0, 5)
+        self.add_road(10, 10, 10, 0, -7)
+        self.add_road(10, 10, 10, 0, 5)
+        self.add_road(10, 10, 10, 0, -2)
+        return
+
+    def add_down_hill_to_end(self, num=200):
+        self.add_road(num, num, num, -ROAD.CURVE.EASY, -self.last_y() / self.segment_length)
+        return
+
+    def reset_road(self):
+        self.segments = []
+
+        self.add_straight(ROAD.LENGTH.SHORT)
+        self.add_low_rolling_hills()
+        self.add_s_curves()
+        self.add_curve(ROAD.LENGTH.MEDIUM, ROAD.CURVE.MEDIUM, ROAD.HILL.LOW)
+        self.add_bumps()
+        self.add_low_rolling_hills()
+        self.add_curve(ROAD.LENGTH.LONG * 2, ROAD.CURVE.MEDIUM, ROAD.HILL.MEDIUM)
+        self.add_straight()
+        self.add_hill(ROAD.LENGTH.MEDIUM, ROAD.HILL.HIGH)
+        self.add_s_curves()
+        self.add_curve(ROAD.LENGTH.LONG, -ROAD.CURVE.MEDIUM, ROAD.HILL.NONE)
+        self.add_hill(ROAD.LENGTH.LONG, ROAD.HILL.HIGH)
+        self.add_curve(ROAD.LENGTH.LONG, ROAD.CURVE.MEDIUM, -ROAD.HILL.LOW)
+        self.add_bumps()
+        self.add_hill(ROAD.LENGTH.LONG, -ROAD.HILL.MEDIUM)
+        self.add_straight()
+        self.add_s_curves()
+        self.add_down_hill_to_end()
+
+        # todo
+        # resetSprites();
+        # resetCars();
+
+        self.segments[self.find_segment(self.player_z).index + 2].color = COLORS.START
+        self.segments[self.find_segment(self.player_z).index + 3].color = COLORS.START
+
+        for n in range(self.rumble_length):
+            self.segments[len(self.segments) - 1 - n].color = COLORS.FINISH
+        self.track_length = len(self.segments) * self.segment_length
+
         return
 
     def render_sprite(self):
@@ -183,6 +259,9 @@ class Racer(object):
                 self.road_width
             )
 
+            x = x + dx
+            dx = dx + segment.curve
+
             render.segment(
                 self.screen, SCREEN_WIDTH, 3,
                 segment.p1.screen.x,
@@ -194,12 +273,13 @@ class Racer(object):
                 segment.fog,
                 segment.color
             )
+
+            maxy = segment.p1.screen.y
         return
 
 
 def main():
     racer = Racer()
-    racer.addStraight()
     speed = [2, 2]
     ballrect = racer.img.get_rect()
     while True:
