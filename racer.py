@@ -251,6 +251,11 @@ class Racer(object):
         self.add_sprite(len(self.segments) - 25, SPRITES.BILLBOARD06, 1.2)
 
         # todo: add palm tree
+        n = 10
+        while(n < 200):
+            self.add_sprite(n, SPRITES.PALM_TREE, 0.5 + random.random() * 0.5)
+            self.add_sprite(n, SPRITES.PALM_TREE, 1 + random.random() * 2)
+            n += 4 + int(math.floor(n / 100.0))
 
         for n in range(250, 1000, 5):
             self.add_sprite(n, SPRITES.COLUMN, 1.1)
@@ -260,10 +265,46 @@ class Racer(object):
         for n in range(200, len(self.segments), 3):
             self.add_sprite(n, util.random_choice(SPRITES.PLANTS),
                             util.random_choice([1, -1]) * (2 + random.random() * 5))
-        # todo: add biliboard
+
+        for n in range(1000, len(self.segments) - 50, 100):
+            side = util.random_choice([1, -1])
+            self.add_sprite(n + util.random_int(0, 50), util.random_choice(SPRITES.BILLBOARDS), -side)
+            for i in range(20):
+                sprite = util.random_choice(SPRITES.PLANTS)
+                offset = side * (1.5 + random.random())
+                self.add_sprite(n + util.random_int(0, 50), sprite, offset)
         return
 
     def reset_cars(self):
+        self.cars = []
+        for n in range(self.total_cars):
+            offset = random.random() * util.random_choice([-0.8, 0.8])
+            z = math.floor(random.random() * len(self.segments)) * self.segment_length
+            sprite = util.random_choice(SPRITES.CARS)
+            speed = self.max_speed / 4.0 + random.random() * self.max_speed / (4 if sprite == SPRITES.SEMI else 2)
+            car = Map({'offset': offset, 'z': z, 'sprite': sprite, 'speed': speed})
+            segment = self.find_segment(car.z)
+            segment.cars.append(car)
+            self.cars.append(car)
+        return
+
+    def update_car_offset(car, car_segment, player_segment, player_w):
+
+        return
+
+    def update_cars(dt, player_segment, player_w):
+        old_segment = new_segment = None
+        for n in range(len(cars)):
+            car = cars[n]
+            old_segment = self.find_segment(car.z)
+            car.offset = car.offset + self.update_car_offset(car, old_segment, player_segment, player_w)
+            car.z = Util.increase(car.z, dt * car.speed, track_length)
+            car.percent = util.percent_remaining(car.z, segment_length)
+            new_segment = self.find_segment(car.z)
+            if (old_segment != new_segment):
+                index = old_segment.cars.index(car)
+                del old_segment.cars[index]
+                new_segment.cars.append(car)
         return
 
     def render_sprite(self):
