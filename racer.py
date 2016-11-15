@@ -57,8 +57,9 @@ class Racer(object):
         self.tree_offset = 0
         self.segments = []
         self.cars = []
-        self.background = None
-        self.sprites = None
+        # todo: need to be removed
+        # self.background = None
+        # self.sprites = None
         self.resolution = SCREEN_HEIGHT / 480.0
         self.road_width = 2000
         self.segment_length = 200
@@ -82,6 +83,11 @@ class Racer(object):
         self.off_road_limit = self.max_speed / 4
         self.total_cars = 200
 
+        self.key_left = False
+        self.key_right = False
+        self.key_faster = False
+        self.key_slower = False
+
         self.reset_road()
         return
 
@@ -90,7 +96,7 @@ class Racer(object):
         # pygame.draw.rect(self.screen, (0,0,255), (200, 150, 100, 50))
         self.screen.fill(WHITE)
         # pygame.draw.polygon(self.screen, BLACK, [[100, 100], [0, 200], [200, 200]], 5)
-        # render.polygon(self.screen, 0, 0, 0, 100, 100, 100, 100, 0, BLACK)
+        # render.r_polygon(self.screen, 0, 0, 0, 100, 100, 100, 100, 0, BLACK)
         return
 
     def last_y(self):
@@ -312,7 +318,7 @@ class Racer(object):
                     (segment.p2.screen.y >= maxy)):  # clip by hill
                 continue
 
-            render.segment(
+            render.r_segment(
                 self.screen, SCREEN_WIDTH, 3,
                 segment.p1.screen.x,
                 segment.p1.screen.y,
@@ -327,10 +333,49 @@ class Racer(object):
             maxy = segment.p1.screen.y
 
         # end for
-        
-        # for n in reversed(range(self.draw_distance - 1)):
-            # print 1
 
+        for n in reversed(range(self.draw_distance - 1)):
+            segment = self.segments[(base_segment.index + n) % len(self.segments)]
+
+            for i in range(len(segment.cars)):
+                car = segment.cars[i]
+                sprite_scale = util.interpolate(segment.p1.screen.scale, segment.p2.screen.scale, car.percent)
+                sprite_x = util.interpolate(segment.p1.screen.x, segment.p2.screen.x, car.percent) + \
+                    (sprite_scale * car.offset * self.road_width * SCREEN_WIDTH / 2)
+                sprite_y = util.interpolate(segment.p1.screen.y, segment.p2.screen.y, car.percent)
+                render.r_sprite(self.screen, SPRITES, SCREEN_WIDTH, SCREEN_HEIGHT, self.resolution,
+                                self.road_width, car.sprite, sprite_scale, sprite_x, sprite_y,
+                                -0.5, -1, segment.clip)
+
+            for i in range(len(segment.sprites)):
+                sprite = segment.sprites[i]
+                sprite_scale = segment.p1.screen.scale
+                sprite_x = segment.p1.screen.x + (sprite_scale * sprite.offset * self.road_width * SCREEN_WIDTH / 2)
+                sprite_y = segment.p1.screen.y
+                render.r_sprite(self.screen, SPRITES, SCREEN_WIDTH, SCREEN_HEIGHT, self.resolution,
+                                self.road_width, sprite.source, sprite_scale, sprite_x, sprite_y,
+                                (-1 if sprite.offset < 0 else 0), -1, segment.clip)
+
+            if segment == player_segment:
+                p_height = (SCREEN_HEIGHT / 2) - (self.camera_depth / self.player_z * util.interpolate(
+                    player_segment.p1.camera.y, player_segment.p2.camera.y, player_percent) * SCREEN_HEIGHT / 2)
+                if self.key_left:
+                    self.speed = self.speed * -1
+                elif self.key_right:
+                    self.speed = self.speed * 1
+                else:
+                    self.speed = self.speed * 0
+
+                render.r_player(
+                    self.screen, SPRITES, SCREEN_WIDTH, SCREEN_HEIGHT, self.resolution, self.road_width,
+                    self.speed / self.max_speed, self.camera_depth / self.player_z,
+                    SCREEN_WIDTH / 2,
+                    p_height,
+                    self.speed,
+                    player_segment.p2.world.y - player_segment.p1.world.y
+                )
+        # import sys
+        # sys.exit()
         return
 
 
@@ -338,6 +383,8 @@ def main():
     racer = Racer()
     speed = [2, 2]
     ballrect = racer.img.get_rect()
+    # print ballrect
+    # return
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
