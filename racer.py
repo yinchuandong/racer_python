@@ -13,7 +13,7 @@ from resource import preload
 from common import *
 
 
-FPS = 30
+FPS = 60
 SCREEN_WIDTH = 1024
 SCREEN_HEIGHT = 768
 
@@ -85,17 +85,10 @@ class Racer(object):
 
         self.key_left = False
         self.key_right = False
-        self.key_faster = False
+        self.key_faster = True
         self.key_slower = False
 
         self.reset_road()
-        return
-
-    def update(self, dt):
-        self.screen.fill(BLACK)
-        player_segment = self.find_segment(self.position + self.player_z)
-        player_w = SPRITES.PLAYER_STRAIGHT.get_rect()[2] * SPRITES.SCALE
-        self.update_cars(dt, player_segment, player_w)
         return
 
     def last_y(self):
@@ -339,6 +332,72 @@ class Racer(object):
                 new_segment.cars.append(car)
         return
 
+    def update(self, dt):
+        self.screen.fill(BLACK)
+        player_segment = self.find_segment(self.position + self.player_z)
+        player_w = SPRITES.PLAYER_STRAIGHT.get_rect()[2] * SPRITES.SCALE
+        speed_percent = float(self.speed) / self.max_speed
+        dx = dt * 2 * speed_percent
+        start_position = self.position
+
+        self.update_cars(dt, player_segment, player_w)
+        self.position = util.increase(self.position, dt * self.speed, self.track_length)
+
+        self.key_faster = True
+        if (self.key_left):
+            self.player_x = self.player_x - dx
+        elif (self.key_right):
+            self.player_x = self.player_x + dx
+
+        self.player_x = self.player_x - (dx * speed_percent * player_segment.curve * self.centrifugal)
+
+        if (self.key_faster):
+            self.speed = util.accelerate(self.speed, self.accel, dt)
+        elif (self.key_slower):
+            self.speed = util.accelerate(self.speed, self.breaking, dt)
+        else:
+            self.speed = util.accelerate(self.speed, self.decel, dt)
+
+        print 'speed:', self.speed, 'speed_percent:', speed_percent, 'max_speed:', self.max_speed
+
+        if self.player_x < -1 or self.player_x > 1:
+            if self.speed > self.off_road_limit:
+                self.speed = util.accelerate(self.speed, self.off_road_decel, dt)
+                for n in range(len(player_segment.sprites)):
+                    sprite = player_segment.sprites[n]
+                    sprite_w = sprite.source.w * SPRITES.SCALE
+                    # todo: check sprite_w/2 or 2.0
+                    if (util.overlap(self.player_x, player_w, sprite.offset + sprite_w / 2.0 * (1 if sprite.offset > 0 else -1), sprite_w)):
+                        self.speed = self.max_speed / 5.0
+                        self.position = util.increase(player_segment.p1.world.z, -self.player_z, self.track_length)
+                        break
+
+        #  check collision
+        for n in range(len(player_segment.cars)):
+            car = player_segment.cars[n]
+            car_w = car.sprite.get_rect()[2] * SPRITES.SCALE
+            if self.speed > car.speed:
+                if (util.overlap(self.player_x, player_w, car.offset, car_w, 0.8)):
+                    self.speed = car.speed * (float(car.speed) / self.speed)
+                    self.position = util.increase(car.z, -self.player_z, self.track_length)
+                    # todo: add has_collision = True
+                    break
+
+        self.player_x = util.limit(self.player_x, -3, 3)  # dont ever let it go too far out of bounds
+        self.speed = util.limit(self.speed, 0, self.max_speed)  # or exceed self.max_speed
+
+        # self.sky_offset  = util.increase(self.sky_offset,  self.sky_speed  * player_segment.curve * (self.position - start_position) / self.segment_length, 1)
+        # self.hill_offset = util.increase(self.hill_offset, self.hill_speed * player_segment.curve * (self.position - start_position) / self.segment_length, 1)
+        # self.tree_offset = util.increase(self.tree_offset, self.tree_speed * player_segment.curve * (self.position - start_position) / self.segment_length, 1)
+
+        # if (self.position > self.player_z):
+        #     if self.current_lap_time and (start_position < self.player_z):
+        #         self.last_lap_tim = self.current_lap_time
+        #         self.current_lap_time = 0
+        #     else:
+        #         self.current_lap_time += dt
+        return
+
     def render_sprite(self):
         base_segment = self.find_segment(self.position)
         base_percent = util.percent_remaining(self.position, self.segment_length)
@@ -432,19 +491,19 @@ class Racer(object):
             if segment == player_segment:
                 p_height = (SCREEN_HEIGHT / 2) - (self.camera_depth / self.player_z * util.interpolate(
                     player_segment.p1.camera.y, player_segment.p2.camera.y, player_percent) * SCREEN_HEIGHT / 2)
-                if self.key_left:
-                    self.speed = self.speed * -1
-                elif self.key_right:
-                    self.speed = self.speed * 1
-                else:
-                    self.speed = self.speed * 0
+                # if self.key_left:
+                #     self.speed = self.speed * -1
+                # elif self.key_right:
+                #     self.speed = self.speed * 1
+                # else:
+                #     self.speed = self.speed * 0
 
                 render.r_player(
                     self.screen, SPRITES, SCREEN_WIDTH, SCREEN_HEIGHT, self.resolution, self.road_width,
-                    self.speed / self.max_speed, self.camera_depth / self.player_z,
+                    float(self.speed) / self.max_speed, float(self.camera_depth) / self.player_z,
                     SCREEN_WIDTH / 2,
                     p_height,
-                    self.speed,
+                    speed * -1 if self.key_left else 1 if self.key_right else 0,
                     player_segment.p2.world.y - player_segment.p1.world.y
                 )
         # import sys
