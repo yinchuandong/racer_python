@@ -91,12 +91,11 @@ class Racer(object):
         self.reset_road()
         return
 
-    def update(self):
-        # self.screen.fill((255,255,255))
-        # pygame.draw.rect(self.screen, (0,0,255), (200, 150, 100, 50))
-        self.screen.fill(WHITE)
-        # pygame.draw.polygon(self.screen, BLACK, [[100, 100], [0, 200], [200, 200]], 5)
-        # render.r_polygon(self.screen, 0, 0, 0, 100, 100, 100, 100, 0, BLACK)
+    def update(self, dt):
+        self.screen.fill(BLACK)
+        player_segment = self.find_segment(self.position + self.player_z)
+        player_w = SPRITES.PLAYER_STRAIGHT.get_rect()[2] * SPRITES.SCALE
+        self.update_cars(dt, player_segment, player_w)
         return
 
     def last_y(self):
@@ -288,18 +287,51 @@ class Racer(object):
             self.cars.append(car)
         return
 
-    def update_car_offset(car, car_segment, player_segment, player_w):
+    def update_car_offset(self, car, car_segment, player_segment, player_w):
+        if car_segment.index - player_segment.index > self.draw_distance:
+            return 0
 
-        return
+        lookahead, car_w = 20, car.sprite.get_rect()[2] * SPRITES.SCALE
+        for i in range(1, lookahead):
+            segment = self.segments[(car_segment.index + i) % len(self.segments)]
+            if segment == player_segment and car.speed > self.speed \
+                    and util.overlap(self.player_x, player_w, car.offset, car_w, 1.2):
+                if (self.player_x > 0.5):
+                    direction = -1
+                elif (self.player_x < -0.5):
+                    direction = 1
+                else:
+                    direction = 1 if car.offset > self.player_x else -1
+                return direction * 1.0 / i * (car.speed - self.speed) / self.max_speed
 
-    def update_cars(dt, player_segment, player_w):
+            for j in range(len(segment.cars)):
+                other_car = segment.cars[j]
+                other_car_w = other_car.sprite.get_rect()[2] * SPRITES.SCALE
+                if car.speed > other_car.speed and util.overlap(car.offset, car_w, other_car.offset, other_car_w, 1.2):
+                    if (other_car.offset > 0.5):
+                        direction = -1
+                    elif (other_car.offset < -0.5):
+                        direction = 1
+                    else:
+                        direction = 1 if car.offset > other_car.offset else -1
+                    return direction * 1 / i * (car.speed - other_car.speed) / self.max_speed
+
+        # if no cars ahead, but I have somehow ended up off road, then steer back on
+        if car.offset < -0.9:
+            return 0.1
+        elif car.offset > 0.9:
+            return -0.1
+        else:
+            return 0
+
+    def update_cars(self, dt, player_segment, player_w):
         old_segment = new_segment = None
-        for n in range(len(cars)):
-            car = cars[n]
+        for n in range(len(self.cars)):
+            car = self.cars[n]
             old_segment = self.find_segment(car.z)
             car.offset = car.offset + self.update_car_offset(car, old_segment, player_segment, player_w)
-            car.z = Util.increase(car.z, dt * car.speed, track_length)
-            car.percent = util.percent_remaining(car.z, segment_length)
+            car.z = util.increase(car.z, dt * car.speed, self.track_length)
+            car.percent = util.percent_remaining(car.z, self.segment_length)
             new_segment = self.find_segment(car.z)
             if (old_segment != new_segment):
                 index = old_segment.cars.index(car)
@@ -422,7 +454,6 @@ class Racer(object):
 
 def main():
     racer = Racer()
-    speed = [2, 2]
     ballrect = racer.img.get_rect()
     # print ballrect
     # return
@@ -430,13 +461,19 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 sys.exit()
-        ballrect = ballrect.move(speed)
-        if ballrect.left < 0 or ballrect.right > SCREEN_WIDTH:
-            speed[0] = -speed[0]
-        if ballrect.top < 0 or ballrect.bottom > SCREEN_HEIGHT:
-            speed[1] = -speed[1]
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_0:
+                    print("Hey, you pressed the key, '0'!")
+                if event.key == pygame.K_1:
+                    print("Doing whatever")
+        # pressed = pygame.key.get_pressed()
+        # print pressed
+        # if pressed[pygame.K_w]:
+        #     print ("w is pressed")
+        # if pressed[pygame.K_s]:
+        #     print ("s is pressed")
 
-        racer.update()
+        racer.update(racer.step)
         racer.render_sprite()
         # racer.screen.blit(racer.img, ballrect)
         # pygame.display.flip()
