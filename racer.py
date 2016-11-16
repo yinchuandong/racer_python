@@ -140,8 +140,6 @@ class Racer(object):
 
     def add_straight(self, num=ROAD.LENGTH.MEDIUM):
         self.add_road(num, num, num, 0, 0)
-        # todo:
-        self.track_length = len(self.segments) + self.segment_length
         return
 
     def add_hill(self, num=ROAD.LENGTH.MEDIUM, height=ROAD.HILL.MEDIUM):
@@ -220,7 +218,6 @@ class Racer(object):
         return
 
     def reset_sprites(self):
-        return
         self.add_sprite(20, SPRITES.BILLBOARD07, -1)
         self.add_sprite(40, SPRITES.BILLBOARD06, -1)
         self.add_sprite(60, SPRITES.BILLBOARD08, -1)
@@ -407,15 +404,17 @@ class Racer(object):
         x = 0
         dx = - (base_segment.curve * base_percent)
 
-        # print len(self.segments)
-        # import sys
+        # print base_segment.index, self.position
         # sys.exit()
+        self.draw_distance = 50
         for n in range(self.draw_distance):
             segment = self.segments[(base_segment.index + n) % len(self.segments)]
-            # todo: <= should be <
-            segment.looped = segment.index <= base_segment.index
+            segment.looped = segment.index < base_segment.index
             segment.fog = util.exponential_fog(float(n) / self.draw_distance, self.fog_density)
             segment.clip = maxy
+
+            # print 'n=', n, 'segment.index', segment.index
+            # print segment
 
             util.project(
                 segment.p1,
@@ -441,12 +440,12 @@ class Racer(object):
             x = x + dx
             dx = dx + segment.curve
 
-            print 'p1:', segment.p1.screen.y, 'p2:', segment.p2.screen.y, \
-                'p.c.z:', segment.p1.camera.z, 'self.c_d:', self.camera_depth, \
-                'maxy:', maxy
+            # print 'p1:', segment.p1.screen.y, 'p2:', segment.p2.screen.y, \
+            #     'p.c.z:', segment.p1.camera.z, 'self.c_d:', self.camera_depth, \
+            #     'maxy:', maxy
             if ((segment.p1.camera.z <= self.camera_depth)  # behind us
-                or (segment.p1.screen.y >= segment.p2.screen.y)  # back face cull
-                # or (segment.p1.screen.y >= maxy)  # clip by hill
+                # or (segment.p2.screen.y > segment.p1.screen.y)  # back face cull
+                # or (segment.p2.screen.y > maxy)  # clip by hill
             ):
                 # print 'p1:', segment.p1.screen.y, 'p2:', segment.p2.screen.y, \
                 #     'p.c.z:', segment.p1.camera.z, 'self.c_d:', self.camera_depth, \
@@ -465,12 +464,12 @@ class Racer(object):
                 segment.color
             )
 
-            maxy = segment.p2.screen.y
+            maxy = segment.p1.screen.y
 
         # end for
         # return
-        # for n in reversed(range(self.draw_distance - 1)):
-        #     segment = self.segments[(base_segment.index + n) % len(self.segments)]
+        for n in reversed(range(self.draw_distance - 1)):
+            segment = self.segments[(base_segment.index + n) % len(self.segments)]
 
             # for i in range(len(segment.cars)):
             #     car = segment.cars[i]
@@ -482,14 +481,14 @@ class Racer(object):
             #                     self.road_width, car.sprite, sprite_scale, sprite_x, sprite_y,
             #                     -0.5, -1, segment.clip)
 
-            # for i in range(len(segment.sprites)):
-            #     sprite = segment.sprites[i]
-            #     sprite_scale = segment.p1.screen.scale
-            #     sprite_x = segment.p1.screen.x + (sprite_scale * sprite.offset * self.road_width * SCREEN_WIDTH / 2.0)
-            #     sprite_y = segment.p1.screen.y
-            #     render.r_sprite(SPRITES, SCREEN_WIDTH, SCREEN_HEIGHT, self.resolution,
-            #                     self.road_width, sprite.source, sprite_scale, sprite_x, sprite_y,
-            #                     (-1 if sprite.offset < 0 else 0), -1, segment.clip)
+            for i in range(len(segment.sprites)):
+                sprite = segment.sprites[i]
+                sprite_scale = segment.p1.screen.scale
+                sprite_x = segment.p1.screen.x + (sprite_scale * sprite.offset * self.road_width * SCREEN_WIDTH / 2.0)
+                sprite_y = segment.p1.screen.y
+                render.r_sprite(SPRITES, SCREEN_WIDTH, SCREEN_HEIGHT, self.resolution,
+                                self.road_width, sprite.source, sprite_scale, sprite_x, sprite_y,
+                                (-1 if sprite.offset < 0 else 0), -1, segment.clip)
 
             # if segment == player_segment:
             #     p_height = (SCREEN_HEIGHT / 2.0) - (self.camera_depth / self.player_z * util.interpolate(
