@@ -14,8 +14,8 @@ from common import *
 
 
 FPS = 60
-SCREEN_WIDTH = 1024
-SCREEN_HEIGHT = 768
+SCREEN_WIDTH = 640
+SCREEN_HEIGHT = 480
 
 
 ROAD = Map()
@@ -68,7 +68,7 @@ class Racer(object):
         self.lanes = 3
         self.field_of_view = 100
         self.camera_height = 1000
-        self.camera_depth = 1.0 / math.tan((self.field_of_view / 2.0) * math.pi / 180)
+        self.camera_depth = 1.0 / math.tan((self.field_of_view / 2.0) * math.pi / 180.0)
         self.draw_distance = 300
         self.player_x = 0
         self.player_z = self.camera_height * self.camera_depth
@@ -242,22 +242,25 @@ class Racer(object):
         self.add_sprite(len(self.segments) - 25, SPRITES.BILLBOARD07, -1.2)
         self.add_sprite(len(self.segments) - 25, SPRITES.BILLBOARD06, 1.2)
 
-        # todo: add palm tree
+        # add palm tree
         n = 10
         while(n < 200):
             self.add_sprite(n, SPRITES.PALM_TREE, 0.5 + random.random() * 0.5)
             self.add_sprite(n, SPRITES.PALM_TREE, 1 + random.random() * 2)
             n += 4 + int(math.floor(n / 100.0))
 
+        # add column
         for n in range(250, 1000, 5):
             self.add_sprite(n, SPRITES.COLUMN, 1.1)
             self.add_sprite(n + util.random_int(0, 5), SPRITES.TREE1, -1 - (random.random() * 2))
             self.add_sprite(n + util.random_int(0, 5), SPRITES.TREE2, -1 - (random.random() * 2))
 
+        # add plants
         for n in range(200, len(self.segments), 3):
             self.add_sprite(n, util.random_choice(SPRITES.PLANTS),
                             util.random_choice([1, -1]) * (2 + random.random() * 5))
 
+        # add billboards
         for n in range(1000, len(self.segments) - 50, 100):
             side = util.random_choice([1, -1])
             self.add_sprite(n + util.random_int(0, 50), util.random_choice(SPRITES.BILLBOARDS), -side)
@@ -358,17 +361,17 @@ class Racer(object):
         else:
             self.speed = util.accelerate(self.speed, self.decel, dt)
 
-        print 'speed:', self.speed, 'speed_percent:', speed_percent, 'max_speed:', self.max_speed
+        # print 'step:', dt, 'speed:', self.speed, 'speed_percent:', speed_percent, 'max_speed:', self.max_speed
 
         if self.player_x < -1 or self.player_x > 1:
             if self.speed > self.off_road_limit:
                 self.speed = util.accelerate(self.speed, self.off_road_decel, dt)
                 for n in range(len(player_segment.sprites)):
                     sprite = player_segment.sprites[n]
-                    sprite_w = sprite.source.w * SPRITES.SCALE
+                    sprite_w = sprite.source.get_rect()[2] * SPRITES.SCALE
                     # todo: check sprite_w/2 or 2.0
                     if (util.overlap(self.player_x, player_w, sprite.offset + sprite_w / 2.0 * (1 if sprite.offset > 0 else -1), sprite_w)):
-                        self.speed = self.max_speed / 5.0
+                        self.speed = int(self.max_speed / 5.0)
                         self.position = util.increase(player_segment.p1.world.z, -self.player_z, self.track_length)
                         break
 
@@ -378,7 +381,7 @@ class Racer(object):
             car_w = car.sprite.get_rect()[2] * SPRITES.SCALE
             if self.speed > car.speed:
                 if (util.overlap(self.player_x, player_w, car.offset, car_w, 0.8)):
-                    self.speed = car.speed * (float(car.speed) / self.speed)
+                    self.speed = int(car.speed * (float(car.speed) / self.speed))
                     self.position = util.increase(car.z, -self.player_z, self.track_length)
                     # todo: add has_collision = True
                     break
@@ -479,24 +482,20 @@ class Racer(object):
                                 self.road_width, car.sprite, sprite_scale, sprite_x, sprite_y,
                                 -0.5, -1, segment.clip)
 
-            for i in range(len(segment.sprites)):
-                sprite = segment.sprites[i]
-                sprite_scale = segment.p1.screen.scale
-                sprite_x = segment.p1.screen.x + (sprite_scale * sprite.offset * self.road_width * SCREEN_WIDTH / 2)
-                sprite_y = segment.p1.screen.y
-                render.r_sprite(self.screen, SPRITES, SCREEN_WIDTH, SCREEN_HEIGHT, self.resolution,
-                                self.road_width, sprite.source, sprite_scale, sprite_x, sprite_y,
-                                (-1 if sprite.offset < 0 else 0), -1, segment.clip)
+            # for i in range(len(segment.sprites)):
+            #     sprite = segment.sprites[i]
+            #     sprite_scale = segment.p1.screen.scale
+            #     # print 'sprite_scale:', sprite_scale
+            #     # sprite_scale = max(0.0001, sprite_scale)
+            #     sprite_x = segment.p1.screen.x + (sprite_scale * sprite.offset * self.road_width * SCREEN_WIDTH / 2.0)
+            #     sprite_y = segment.p1.screen.y
+            #     render.r_sprite(self.screen, SPRITES, SCREEN_WIDTH, SCREEN_HEIGHT, self.resolution,
+            #                     self.road_width, sprite.source, sprite_scale, sprite_x, sprite_y,
+            #                     (-1 if sprite.offset < 0 else 0), -1, segment.clip)
 
             if segment == player_segment:
                 p_height = (SCREEN_HEIGHT / 2) - (self.camera_depth / self.player_z * util.interpolate(
                     player_segment.p1.camera.y, player_segment.p2.camera.y, player_percent) * SCREEN_HEIGHT / 2)
-                # if self.key_left:
-                #     self.speed = self.speed * -1
-                # elif self.key_right:
-                #     self.speed = self.speed * 1
-                # else:
-                #     self.speed = self.speed * 0
 
                 render.r_player(
                     self.screen, SPRITES, SCREEN_WIDTH, SCREEN_HEIGHT, self.resolution, self.road_width,

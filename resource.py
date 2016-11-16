@@ -58,5 +58,6 @@ if __name__ == '__main__':
     SPRITES = preload()
     pygame.display.set_caption('racer')
     print SPRITES.SCALE
+    print SPRITES.PLAYER_STRAIGHT.get_rect()
 
     print '1'

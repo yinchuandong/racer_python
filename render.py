@@ -49,8 +49,8 @@ def r_lane_marker_width(projected_road_width, lanes):
 
 def r_sprite(screen, SPRITES, width, height, resolution, road_width, sprite, scale, dest_x, dest_y, offset_x=0, offset_y=0, clip_y=0):
     rect = sprite.get_rect()  # x,y,w,h
-    dest_w = (rect[2] * scale * width / 2) * (SPRITES.SCALE * road_width)
-    dest_h = (rect[3] * scale * width / 2) * (SPRITES.SCALE * road_width)
+    dest_w = (rect[2] * scale * width / 2.0) * (SPRITES.SCALE * road_width)
+    dest_h = (rect[3] * scale * width / 2.0) * (SPRITES.SCALE * road_width)
 
     dest_x = dest_x + (dest_w * offset_x)
     dest_y = dest_y + (dest_h * offset_y)
@@ -62,13 +62,19 @@ def r_sprite(screen, SPRITES, width, height, resolution, road_width, sprite, sca
         #                  (sprite.h * clip_h / dest_h), dest_x, dest_y, dest_w, dest_h - clip_h)
         # sprite = pygame.transform.scale(sprite, (rect[2], int(rect[3] * clip_h / float(dest_h))))
         # print sprite.get_rect()
-        sprite = pygame.transform.scale(sprite, (int(dest_w), int(dest_h)))
+        # sprite = pygame.transform.scale(sprite, (int(dest_w), int(dest_h)))
+        if dest_w > 500 or dest_h > 500:
+            # print dest_w, dest_h
+            return
+        s_sprite = pygame.transform.scale(sprite, (int(dest_w), int(dest_h)))
+        # print dest_w, dest_h, scale
         # print sprite.get_rect()
         # print dest_h, clip_h, clip_y
         # print dest_x, dest_y, dest_w, dest_h
+        # print dest_w, dest_h
         # import sys
         # sys.exit()
-        screen.blit(sprite, (dest_x, dest_y, dest_w, dest_h))
+        screen.blit(s_sprite, (dest_x, dest_y, dest_w, dest_h))
     return
 
 
