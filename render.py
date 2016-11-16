@@ -1,5 +1,7 @@
 import pygame
 from pygame import gfxdraw
+import pyglet
+
 import util
 import random
 
@@ -102,5 +104,11 @@ def fog(screen, x, y, width, height, fog):
     return
 
 
+def test():
+
+    return
+
 if __name__ == '__main__':
-    print range(1, 10)
+    color = (16, 170, 16)
+    print color * 4
+    # print range(1, 10)

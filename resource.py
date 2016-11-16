@@ -1,63 +1,63 @@
-import pygame
-from pygame.image import load
-from map import Map
+import pyglet
 
 
-def preload():
-    SPRITES = Map({
-        'PALM_TREE': load('images/sprites/palm_tree.png').convert_alpha(),
-        'BILLBOARD08': load('images/sprites/billboard08.png').convert_alpha(),
-        'TREE1': load('images/sprites/tree1.png').convert_alpha(),
-        'DEAD_TREE1': load('images/sprites/dead_tree1.png').convert_alpha(),
-        'BILLBOARD09': load('images/sprites/billboard09.png').convert_alpha(),
-        'BOULDER3': load('images/sprites/boulder3.png').convert_alpha(),
-        'COLUMN': load('images/sprites/column.png').convert_alpha(),
-        'BILLBOARD01': load('images/sprites/billboard01.png').convert_alpha(),
-        'BILLBOARD06': load('images/sprites/billboard06.png').convert_alpha(),
-        'BILLBOARD05': load('images/sprites/billboard05.png').convert_alpha(),
-        'BILLBOARD07': load('images/sprites/billboard07.png').convert_alpha(),
-        'BOULDER2': load('images/sprites/boulder2.png').convert_alpha(),
-        'TREE2': load('images/sprites/tree2.png').convert_alpha(),
-        'BILLBOARD04': load('images/sprites/billboard04.png').convert_alpha(),
-        'DEAD_TREE2': load('images/sprites/dead_tree2.png').convert_alpha(),
-        'BOULDER1': load('images/sprites/boulder1.png').convert_alpha(),
-        'BUSH1': load('images/sprites/bush1.png').convert_alpha(),
-        'CACTUS': load('images/sprites/cactus.png').convert_alpha(),
-        'BUSH2': load('images/sprites/bush2.png').convert_alpha(),
-        'BILLBOARD03': load('images/sprites/billboard03.png').convert_alpha(),
-        'BILLBOARD02': load('images/sprites/billboard02.png').convert_alpha(),
-        'STUMP': load('images/sprites/stump.png').convert_alpha(),
-        'SEMI': load('images/sprites/semi.png').convert_alpha(),
-        'TRUCK': load('images/sprites/truck.png').convert_alpha(),
-        'CAR03': load('images/sprites/car03.png').convert_alpha(),
-        'CAR02': load('images/sprites/car02.png').convert_alpha(),
-        'CAR04': load('images/sprites/car04.png').convert_alpha(),
-        'CAR01': load('images/sprites/car01.png').convert_alpha(),
-        'PLAYER_UPHILL_LEFT': load('images/sprites/player_uphill_left.png').convert_alpha(),
-        'PLAYER_UPHILL_STRAIGHT': load('images/sprites/player_uphill_straight.png').convert_alpha(),
-        'PLAYER_UPHILL_RIGHT': load('images/sprites/player_uphill_right.png').convert_alpha(),
-        'PLAYER_LEFT': load('images/sprites/player_left.png').convert_alpha(),
-        'PLAYER_STRAIGHT': load('images/sprites/player_straight.png').convert_alpha(),
-        'PLAYER_RIGHT': load('images/sprites/player_right.png').convert_alpha(),
-    })
-    # the reference sprite width should be 1/3rd the (half-)roadWidth
-    SPRITES.SCALE = 0.3 * (1.0 / SPRITES.PLAYER_STRAIGHT.get_width())
-    SPRITES.BILLBOARDS = [SPRITES.BILLBOARD01, SPRITES.BILLBOARD02, SPRITES.BILLBOARD03, SPRITES.BILLBOARD04,
-                          SPRITES.BILLBOARD05, SPRITES.BILLBOARD06, SPRITES.BILLBOARD07,
-                          SPRITES.BILLBOARD08, SPRITES.BILLBOARD09]
-    SPRITES.PLANTS = [SPRITES.TREE1, SPRITES.TREE2, SPRITES.DEAD_TREE1, SPRITES.DEAD_TREE2, SPRITES.PALM_TREE,
-                      SPRITES.BUSH1, SPRITES.BUSH2, SPRITES.CACTUS, SPRITES.STUMP,
-                      SPRITES.BOULDER1, SPRITES.BOULDER2, SPRITES.BOULDER3]
-    SPRITES.CARS = [SPRITES.CAR01, SPRITES.CAR02, SPRITES.CAR03, SPRITES.CAR04, SPRITES.SEMI, SPRITES.TRUCK]
-    return SPRITES
+class Resource(object):
+    def __init__(self):
+        pyglet.resource.path = ['./']
+        pyglet.resource.reindex()
+        self.PALM_TREE = pyglet.resource.image('images/sprites/palm_tree.png')
+        self.BILLBOARD08 = pyglet.resource.image('images/sprites/billboard08.png')
+        self.TREE1 = pyglet.resource.image('images/sprites/tree1.png')
+        self.DEAD_TREE1 = pyglet.resource.image('images/sprites/dead_tree1.png')
+        self.BILLBOARD09 = pyglet.resource.image('images/sprites/billboard09.png')
+        self.BOULDER3 = pyglet.resource.image('images/sprites/boulder3.png')
+        self.COLUMN = pyglet.resource.image('images/sprites/column.png')
+        self.BILLBOARD01 = pyglet.resource.image('images/sprites/billboard01.png')
+        self.BILLBOARD06 = pyglet.resource.image('images/sprites/billboard06.png')
+        self.BILLBOARD05 = pyglet.resource.image('images/sprites/billboard05.png')
+        self.BILLBOARD07 = pyglet.resource.image('images/sprites/billboard07.png')
+        self.BOULDER2 = pyglet.resource.image('images/sprites/boulder2.png')
+        self.TREE2 = pyglet.resource.image('images/sprites/tree2.png')
+        self.BILLBOARD04 = pyglet.resource.image('images/sprites/billboard04.png')
+        self.DEAD_TREE2 = pyglet.resource.image('images/sprites/dead_tree2.png')
+        self.BOULDER1 = pyglet.resource.image('images/sprites/boulder1.png')
+        self.BUSH1 = pyglet.resource.image('images/sprites/bush1.png')
+        self.CACTUS = pyglet.resource.image('images/sprites/cactus.png')
+        self.BUSH2 = pyglet.resource.image('images/sprites/bush2.png')
+        self.BILLBOARD03 = pyglet.resource.image('images/sprites/billboard03.png')
+        self.BILLBOARD02 = pyglet.resource.image('images/sprites/billboard02.png')
+        self.STUMP = pyglet.resource.image('images/sprites/stump.png')
+        self.SEMI = pyglet.resource.image('images/sprites/semi.png')
+        self.TRUCK = pyglet.resource.image('images/sprites/truck.png')
+        self.CAR03 = pyglet.resource.image('images/sprites/car03.png')
+        self.CAR02 = pyglet.resource.image('images/sprites/car02.png')
+        self.CAR04 = pyglet.resource.image('images/sprites/car04.png')
+        self.CAR01 = pyglet.resource.image('images/sprites/car01.png')
+        self.PLAYER_UPHILL_LEFT = pyglet.resource.image('images/sprites/player_uphill_left.png')
+        self.PLAYER_UPHILL_STRAIGHT = pyglet.resource.image('images/sprites/player_uphill_straight.png')
+        self.PLAYER_UPHILL_RIGHT = pyglet.resource.image('images/sprites/player_uphill_right.png')
+        self.PLAYER_LEFT = pyglet.resource.image('images/sprites/player_left.png')
+        self.PLAYER_STRAIGHT = pyglet.resource.image('images/sprites/player_straight.png')
+        self.PLAYER_RIGHT = pyglet.resource.image('images/sprites/player_right.png')
+
+        # the reference sprite width should be 1/3rd the (half-)roadWidth
+        self.SCALE = 0.3 * (1.0 / self.PLAYER_STRAIGHT.width)
+
+        self.BILLBOARDS = [self.BILLBOARD01, self.BILLBOARD02, self.BILLBOARD03, self.BILLBOARD04,
+                           self.BILLBOARD05, self.BILLBOARD06, self.BILLBOARD07,
+                           self.BILLBOARD08, self.BILLBOARD09]
+        self.PLANTS = [self.TREE1, self.TREE2, self.DEAD_TREE1, self.DEAD_TREE2, self.PALM_TREE,
+                       self.BUSH1, self.BUSH2, self.CACTUS, self.STUMP,
+                       self.BOULDER1, self.BOULDER2, self.BOULDER3]
+        self.CARS = [self.CAR01, self.CAR02, self.CAR03, self.CAR04, self.SEMI, self.TRUCK]
+
+        return
+
+
+SPRITES = Resource()
 
 
 if __name__ == '__main__':
-    pygame.init()
-    screen = pygame.display.set_mode((600, 450))
-    SPRITES = preload()
-    pygame.display.set_caption('racer')
     print SPRITES.SCALE
-    print SPRITES.PLAYER_STRAIGHT.get_rect()
-
+    print SPRITES.PALM_TREE.width, SPRITES.PALM_TREE.height
     print '1'

@@ -2,14 +2,12 @@ import random
 import sys
 import math
 
-import pygame
-from pygame import gfxdraw
-from pygame.locals import *
+import pyglet
 
 from map import Map
 import util
 import render
-from resource import preload
+from resource import SPRITES
 from common import *
 
 
@@ -29,21 +27,15 @@ ROAD.CURVE = Map({
     'NONE': 0, 'EASY': 2, 'MEDIUM': 4, 'HARD': 6
 })
 
-SPRITES = []
+game_window = pyglet.window.Window(SCREEN_WIDTH, SCREEN_HEIGHT)
 
 
 class Racer(object):
 
     def __init__(self):
-        pygame.init()
-        self.fps_clock = pygame.time.Clock()
-        self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-        pygame.display.set_caption('racer')
-        global SPRITES
-        SPRITES = preload()
+        self.screen = None
+        # self.screen = pyglet.window.Window((SCREEN_WIDTH, SCREEN_HEIGHT))
         self.reset()
-
-        self.img = pygame.image.load('images/sprites/billboard01.png')
         return
 
     def reset(self):
@@ -128,7 +120,8 @@ class Racer(object):
         # print self.segments
         return
 
-    def add_sprite(self, n, sprite, offset):
+    def add_sprite(self, n, sprite_img, offset):
+        sprite = pyglet.sprite.Sprite(img=sprite_img)
         self.segments[n].sprites.append(Map({'source': sprite, 'offset': offset}))
         return
 
@@ -275,8 +268,9 @@ class Racer(object):
         for n in range(self.total_cars):
             offset = random.random() * util.random_choice([-0.8, 0.8])
             z = math.floor(random.random() * len(self.segments)) * self.segment_length
-            sprite = util.random_choice(SPRITES.CARS)
-            speed = self.max_speed / 4.0 + random.random() * self.max_speed / (4 if sprite == SPRITES.SEMI else 2)
+            sprite_img = util.random_choice(SPRITES.CARS)
+            speed = self.max_speed / 4.0 + random.random() * self.max_speed / (4 if sprite_img == SPRITES.SEMI else 2)
+            sprite = pyglet.sprite.Sprite(img=sprite_img)
             car = Map({'offset': offset, 'z': z, 'sprite': sprite, 'speed': speed})
             segment = self.find_segment(car.z)
             segment.cars.append(car)
@@ -287,7 +281,7 @@ class Racer(object):
         if car_segment.index - player_segment.index > self.draw_distance:
             return 0
 
-        lookahead, car_w = 20, car.sprite.get_rect()[2] * SPRITES.SCALE
+        lookahead, car_w = 20, car.sprite.width * SPRITES.SCALE
         for i in range(1, lookahead):
             segment = self.segments[(car_segment.index + i) % len(self.segments)]
             if segment == player_segment and car.speed > self.speed \
@@ -302,7 +296,7 @@ class Racer(object):
 
             for j in range(len(segment.cars)):
                 other_car = segment.cars[j]
-                other_car_w = other_car.sprite.get_rect()[2] * SPRITES.SCALE
+                other_car_w = other_car.sprite.width * SPRITES.SCALE
                 if car.speed > other_car.speed and util.overlap(car.offset, car_w, other_car.offset, other_car_w, 1.2):
                     if (other_car.offset > 0.5):
                         direction = -1
@@ -336,12 +330,11 @@ class Racer(object):
         return
 
     def update(self, dt):
-        self.screen.fill(BLACK)
         player_segment = self.find_segment(self.position + self.player_z)
-        player_w = SPRITES.PLAYER_STRAIGHT.get_rect()[2] * SPRITES.SCALE
+        player_w = SPRITES.PLAYER_STRAIGHT.width * SPRITES.SCALE
         speed_percent = float(self.speed) / self.max_speed
         dx = dt * 2 * speed_percent
-        start_position = self.position
+        # start_position = self.position
 
         self.update_cars(dt, player_segment, player_w)
         self.position = util.increase(self.position, dt * self.speed, self.track_length)
@@ -368,7 +361,7 @@ class Racer(object):
                 self.speed = util.accelerate(self.speed, self.off_road_decel, dt)
                 for n in range(len(player_segment.sprites)):
                     sprite = player_segment.sprites[n]
-                    sprite_w = sprite.source.get_rect()[2] * SPRITES.SCALE
+                    sprite_w = sprite.source.width * SPRITES.SCALE
                     # todo: check sprite_w/2 or 2.0
                     if (util.overlap(self.player_x, player_w, sprite.offset + sprite_w / 2.0 * (1 if sprite.offset > 0 else -1), sprite_w)):
                         self.speed = int(self.max_speed / 5.0)
@@ -378,7 +371,7 @@ class Racer(object):
         #  check collision
         for n in range(len(player_segment.cars)):
             car = player_segment.cars[n]
-            car_w = car.sprite.get_rect()[2] * SPRITES.SCALE
+            car_w = car.sprite.width * SPRITES.SCALE
             if self.speed > car.speed:
                 if (util.overlap(self.player_x, player_w, car.offset, car_w, 0.8)):
                     self.speed = int(car.speed * (float(car.speed) / self.speed))
@@ -468,7 +461,7 @@ class Racer(object):
             maxy = segment.p1.screen.y
 
         # end for
-
+        return
         for n in reversed(range(self.draw_distance - 1)):
             segment = self.segments[(base_segment.index + n) % len(self.segments)]
 
@@ -510,41 +503,39 @@ class Racer(object):
         return
 
 
-def main():
-    racer = Racer()
-    ballrect = racer.img.get_rect()
-    # print ballrect
-    # return
-    while True:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                sys.exit()
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_0:
-                    print("Hey, you pressed the key, '0'!")
-                if event.key == pygame.K_1:
-                    print("Doing whatever")
-        # pressed = pygame.key.get_pressed()
-        # print pressed
-        # if pressed[pygame.K_w]:
-        #     print ("w is pressed")
-        # if pressed[pygame.K_s]:
-        #     print ("s is pressed")
+racer = Racer()
+my_car = pyglet.sprite.Sprite(img=SPRITES.PALM_TREE)
 
-        racer.update(racer.step)
-        racer.render_sprite()
-        # racer.screen.blit(racer.img, ballrect)
-        # pygame.display.flip()
-        pygame.display.update()
+
+@game_window.event
+def on_draw():
+    game_window.clear()
+    # racer.update()
+    racer.render_sprite()
+    # my_car.draw()
+    # pyglet.graphics.draw_indexed(4, pyglet.gl.GL_TRIANGLES,
+    #     [0, 1, 2, 0, 2, 3],
+    #     ('v2i', (0, 0,
+    #              200, 0,
+    #              150, 100,
+    #              50, 100,
+    #              )),
+    #     ('c3B', (16, 170, 16, 16, 170, 16, 16, 170, 16, 16, 170, 16)),
+    # )
     return
 
+def update(dt):
+    my_car.x += 1
+    return
 
 def test():
     racer = Racer()
     racer.add_segment(1, 2)
     return
 
+
 if __name__ == '__main__':
-    main()
+    pyglet.clock.schedule_interval(racer.update, 1 / 60.0)
+    pyglet.app.run()
     # test()
     # print list(reversed(range(10)))
