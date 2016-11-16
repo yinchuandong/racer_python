@@ -415,10 +415,10 @@ class Racer(object):
         # print len(self.segments)
         # import sys
         # sys.exit()
+        # self.draw_distance = 60
         for n in range(self.draw_distance):
             segment = self.segments[(base_segment.index + n) % len(self.segments)]
-            # todo: <= should be <
-            segment.looped = segment.index <= base_segment.index
+            segment.looped = segment.index < base_segment.index
             segment.fog = util.exponential_fog(float(n) / self.draw_distance, self.fog_density)
             segment.clip = maxy
 
@@ -482,16 +482,16 @@ class Racer(object):
                                 self.road_width, car.sprite, sprite_scale, sprite_x, sprite_y,
                                 -0.5, -1, segment.clip)
 
-            # for i in range(len(segment.sprites)):
-            #     sprite = segment.sprites[i]
-            #     sprite_scale = segment.p1.screen.scale
-            #     # print 'sprite_scale:', sprite_scale
-            #     # sprite_scale = max(0.0001, sprite_scale)
-            #     sprite_x = segment.p1.screen.x + (sprite_scale * sprite.offset * self.road_width * SCREEN_WIDTH / 2.0)
-            #     sprite_y = segment.p1.screen.y
-            #     render.r_sprite(self.screen, SPRITES, SCREEN_WIDTH, SCREEN_HEIGHT, self.resolution,
-            #                     self.road_width, sprite.source, sprite_scale, sprite_x, sprite_y,
-            #                     (-1 if sprite.offset < 0 else 0), -1, segment.clip)
+            for i in range(len(segment.sprites)):
+                sprite = segment.sprites[i]
+                sprite_scale = segment.p1.screen.scale
+                # print 'sprite_scale:', sprite_scale
+                # sprite_scale = max(0.0001, sprite_scale)
+                sprite_x = segment.p1.screen.x + (sprite_scale * sprite.offset * self.road_width * SCREEN_WIDTH / 2.0)
+                sprite_y = segment.p1.screen.y
+                render.r_sprite(self.screen, SPRITES, SCREEN_WIDTH, SCREEN_HEIGHT, self.resolution,
+                                self.road_width, sprite.source, sprite_scale, sprite_x, sprite_y,
+                                (-1 if sprite.offset < 0 else 0), -1, segment.clip)
 
             if segment == player_segment:
                 p_height = (SCREEN_HEIGHT / 2) - (self.camera_depth / self.player_z * util.interpolate(
