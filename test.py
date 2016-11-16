@@ -19,6 +19,16 @@ palm_tree.scale = 0.4
 def on_draw():
     game_window.clear()
     palm_tree.draw()
+    # print palm_tree.width
+    # print palm_tree.image.width
+    # print palm_tree_img.width
+
+
+def update(dt):
+    palm_tree.x += 1
+    return
+
 
 if __name__ == '__main__':
+    pyglet.clock.schedule_interval(update, 1 / 60.0)
     pyglet.app.run()

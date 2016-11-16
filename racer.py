@@ -28,13 +28,12 @@ ROAD.CURVE = Map({
 })
 
 game_window = pyglet.window.Window(SCREEN_WIDTH, SCREEN_HEIGHT)
+# pyglet.gl.glTranslatef(0, -SCREEN_HEIGHT, 0)
 
 
 class Racer(object):
 
     def __init__(self):
-        self.screen = None
-        # self.screen = pyglet.window.Window((SCREEN_WIDTH, SCREEN_HEIGHT))
         self.reset()
         return
 
@@ -62,6 +61,7 @@ class Racer(object):
         self.camera_height = 1000
         self.camera_depth = 1.0 / math.tan((self.field_of_view / 2.0) * math.pi / 180.0)
         self.draw_distance = 300
+        self.player_sprite = pyglet.sprite.Sprite(img=SPRITES.PLAYER_STRAIGHT)
         self.player_x = 0
         self.player_z = self.camera_height * self.camera_depth
         self.fog_density = 5
@@ -77,7 +77,7 @@ class Racer(object):
 
         self.key_left = False
         self.key_right = False
-        self.key_faster = True
+        self.key_faster = False
         self.key_slower = False
 
         self.reset_road()
@@ -400,6 +400,7 @@ class Racer(object):
         player_segment = self.find_segment(self.position + self.player_z)
         player_percent = util.percent_remaining(self.position + self.player_z, self.segment_length)
         player_y = util.interpolate(player_segment.p1.world.y, player_segment.p2.world.y, player_percent)
+
         maxy = SCREEN_HEIGHT
 
         x = 0
@@ -415,8 +416,6 @@ class Racer(object):
             segment.fog = util.exponential_fog(float(n) / self.draw_distance, self.fog_density)
             segment.clip = maxy
 
-            # print segment.index, base_segment.index
-            # print self.position - (self.track_length if segment.looped else 0),
             util.project(
                 segment.p1,
                 (self.player_x * self.road_width) - x,
@@ -441,13 +440,14 @@ class Racer(object):
             x = x + dx
             dx = dx + segment.curve
 
-            if ((segment.p1.camera.z <= self.camera_depth) or  # behind us
-                (segment.p2.screen.y >= segment.p1.screen.y) or  # back face cull
-                    (segment.p2.screen.y >= maxy)):  # clip by hill
-                continue
+            # if ((segment.p1.camera.z <= self.camera_depth)  # behind us
+            #     or (segment.p2.screen.y >= segment.p1.screen.y)  # back face cull
+            #     or (segment.p2.screen.y >= maxy)  # clip by hill
+            # ):
+            #     continue
 
             render.r_segment(
-                self.screen, SCREEN_WIDTH, 3,
+                SCREEN_WIDTH, 3,
                 segment.p1.screen.x,
                 segment.p1.screen.y,
                 segment.p1.screen.w,
@@ -461,41 +461,39 @@ class Racer(object):
             maxy = segment.p1.screen.y
 
         # end for
-        return
+        # return
         for n in reversed(range(self.draw_distance - 1)):
             segment = self.segments[(base_segment.index + n) % len(self.segments)]
 
-            for i in range(len(segment.cars)):
-                car = segment.cars[i]
-                sprite_scale = util.interpolate(segment.p1.screen.scale, segment.p2.screen.scale, car.percent)
-                sprite_x = util.interpolate(segment.p1.screen.x, segment.p2.screen.x, car.percent) + \
-                    (sprite_scale * car.offset * self.road_width * SCREEN_WIDTH / 2)
-                sprite_y = util.interpolate(segment.p1.screen.y, segment.p2.screen.y, car.percent)
-                render.r_sprite(self.screen, SPRITES, SCREEN_WIDTH, SCREEN_HEIGHT, self.resolution,
-                                self.road_width, car.sprite, sprite_scale, sprite_x, sprite_y,
-                                -0.5, -1, segment.clip)
+            # for i in range(len(segment.cars)):
+            #     car = segment.cars[i]
+            #     sprite_scale = util.interpolate(segment.p1.screen.scale, segment.p2.screen.scale, car.percent)
+            #     sprite_x = util.interpolate(segment.p1.screen.x, segment.p2.screen.x, car.percent) + \
+            #         (sprite_scale * car.offset * self.road_width * SCREEN_WIDTH / 2)
+            #     sprite_y = util.interpolate(segment.p1.screen.y, segment.p2.screen.y, car.percent)
+            #     render.r_sprite(SPRITES, SCREEN_WIDTH, SCREEN_HEIGHT, self.resolution,
+            #                     self.road_width, car.sprite, sprite_scale, sprite_x, sprite_y,
+            #                     -0.5, -1, segment.clip)
 
-            # for i in range(len(segment.sprites)):
-            #     sprite = segment.sprites[i]
-            #     sprite_scale = segment.p1.screen.scale
-            #     # print 'sprite_scale:', sprite_scale
-            #     # sprite_scale = max(0.0001, sprite_scale)
-            #     sprite_x = segment.p1.screen.x + (sprite_scale * sprite.offset * self.road_width * SCREEN_WIDTH / 2.0)
-            #     sprite_y = segment.p1.screen.y
-            #     render.r_sprite(self.screen, SPRITES, SCREEN_WIDTH, SCREEN_HEIGHT, self.resolution,
-            #                     self.road_width, sprite.source, sprite_scale, sprite_x, sprite_y,
-            #                     (-1 if sprite.offset < 0 else 0), -1, segment.clip)
+            for i in range(len(segment.sprites)):
+                sprite = segment.sprites[i]
+                sprite_scale = segment.p1.screen.scale
+                sprite_x = segment.p1.screen.x + (sprite_scale * sprite.offset * self.road_width * SCREEN_WIDTH / 2.0)
+                sprite_y = segment.p1.screen.y
+                render.r_sprite(SPRITES, SCREEN_WIDTH, SCREEN_HEIGHT, self.resolution,
+                                self.road_width, sprite.source, sprite_scale, sprite_x, sprite_y,
+                                (-1 if sprite.offset < 0 else 2), -1, segment.clip)
 
             if segment == player_segment:
-                p_height = (SCREEN_HEIGHT / 2) - (self.camera_depth / self.player_z * util.interpolate(
+                p_height = (SCREEN_HEIGHT / 2.0) - (self.camera_depth / self.player_z * util.interpolate(
                     player_segment.p1.camera.y, player_segment.p2.camera.y, player_percent) * SCREEN_HEIGHT / 2)
-
+                p_height = SCREEN_HEIGHT - p_height + self.player_sprite.height
                 render.r_player(
-                    self.screen, SPRITES, SCREEN_WIDTH, SCREEN_HEIGHT, self.resolution, self.road_width,
+                    SPRITES, self.player_sprite, SCREEN_WIDTH, SCREEN_HEIGHT, self.resolution, self.road_width,
                     float(self.speed) / self.max_speed, float(self.camera_depth) / self.player_z,
                     SCREEN_WIDTH / 2,
                     p_height,
-                    speed * -1 if self.key_left else 1 if self.key_right else 0,
+                    self.speed * (-1 if self.key_left else 1 if self.key_right else 0),
                     player_segment.p2.world.y - player_segment.p1.world.y
                 )
         # import sys
@@ -513,15 +511,6 @@ def on_draw():
     # racer.update()
     racer.render_sprite()
     # my_car.draw()
-    # pyglet.graphics.draw_indexed(4, pyglet.gl.GL_TRIANGLES,
-    #     [0, 1, 2, 0, 2, 3],
-    #     ('v2i', (0, 0,
-    #              200, 0,
-    #              150, 100,
-    #              50, 100,
-    #              )),
-    #     ('c3B', (16, 170, 16, 16, 170, 16, 16, 170, 16, 16, 170, 16)),
-    # )
     return
 
 def update(dt):

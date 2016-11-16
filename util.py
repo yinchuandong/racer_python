@@ -64,6 +64,9 @@ def project(p, camera_x, camera_y, camera_z, camera_depth, width, height, road_w
     p.screen.x = round((width / 2.0) + (p.screen.scale * p.camera.x * width / 2.0))
     p.screen.y = round((height / 2.0) - (p.screen.scale * p.camera.y * height / 2.0))
     p.screen.w = round((p.screen.scale * road_width * width / 2.0))
+    # for pylet coordinate system, have to add this line
+    # p.camera.y = 0
+    p.screen.y = height - p.screen.y
     return
 
 
