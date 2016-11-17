@@ -7,9 +7,9 @@ import random
 def r_polygon(screen, x1, y1, x2, y2, x3, y3, x4, y4, color):
     points = [[x1, y1], [x2, y2], [x3, y3], [x4, y4]]
     # points = [[x1 - 10, y1 - 10], [x2 - 10, y2 - 10], [x3 -10, y3 -10], [x4-10, y4-10]]
-    # pygame.draw.polygon(screen, color, points, 0)
+    pygame.draw.polygon(screen, color, points, 0)
     # gfxdraw.aapolygon(screen, points, color)
-    gfxdraw.filled_polygon(screen, points, color)
+    # gfxdraw.filled_polygon(screen, points, color)
     return
 
 

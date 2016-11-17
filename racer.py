@@ -85,7 +85,7 @@ class Racer(object):
 
         self.key_left = False
         self.key_right = False
-        self.key_faster = True
+        self.key_faster = False
         self.key_slower = False
 
         self.reset_road()
@@ -352,7 +352,8 @@ class Racer(object):
         elif (self.key_right):
             self.player_x = self.player_x + dx
 
-        self.player_x = self.player_x - (dx * speed_percent * player_segment.curve * self.centrifugal)
+        if self.speed > 10:
+            self.player_x = self.player_x - (dx * speed_percent * player_segment.curve * self.centrifugal)
 
         if (self.key_faster):
             self.speed = util.accelerate(self.speed, self.accel, dt)
@@ -366,14 +367,15 @@ class Racer(object):
         if self.player_x < -1 or self.player_x > 1:
             if self.speed > self.off_road_limit:
                 self.speed = util.accelerate(self.speed, self.off_road_decel, dt)
-                for n in range(len(player_segment.sprites)):
-                    sprite = player_segment.sprites[n]
-                    sprite_w = sprite.source.get_rect()[2] * SPRITES.SCALE
-                    # todo: check sprite_w/2 or 2.0
-                    if (util.overlap(self.player_x, player_w, sprite.offset + sprite_w / 2.0 * (1 if sprite.offset > 0 else -1), sprite_w)):
-                        self.speed = int(self.max_speed / 5.0)
-                        self.position = util.increase(player_segment.p1.world.z, -self.player_z, self.track_length)
-                        break
+
+            for n in range(len(player_segment.sprites)):
+                sprite = player_segment.sprites[n]
+                sprite_w = sprite.source.get_rect()[2] * SPRITES.SCALE
+                # todo: check sprite_w/2 or 2.0
+                if (util.overlap(self.player_x, player_w, sprite.offset + sprite_w / 2.0 * (1 if sprite.offset > 0 else -1), sprite_w)):
+                    self.speed = int(self.max_speed / 5.0)
+                    self.position = util.increase(player_segment.p1.world.z, -self.player_z, self.track_length)
+                    break
 
         #  check collision
         for n in range(len(player_segment.cars)):
@@ -415,7 +417,7 @@ class Racer(object):
         # print len(self.segments)
         # import sys
         # sys.exit()
-        # self.draw_distance = 60
+        self.draw_distance = 60
         for n in range(self.draw_distance):
             segment = self.segments[(base_segment.index + n) % len(self.segments)]
             segment.looped = segment.index < base_segment.index
@@ -502,7 +504,7 @@ class Racer(object):
                     float(self.speed) / self.max_speed, float(self.camera_depth) / self.player_z,
                     SCREEN_WIDTH / 2,
                     p_height,
-                    speed * -1 if self.key_left else 1 if self.key_right else 0,
+                    self.speed * -1 if self.key_left else 1 if self.key_right else 0,
                     player_segment.p2.world.y - player_segment.p1.world.y
                 )
         # import sys
@@ -520,10 +522,13 @@ def main():
             if event.type == pygame.QUIT:
                 sys.exit()
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_0:
-                    print("Hey, you pressed the key, '0'!")
-                if event.key == pygame.K_1:
-                    print("Doing whatever")
+                if event.key == pygame.K_j:
+                    racer.key_left = True
+                if event.key == pygame.K_l:
+                    racer.key_right = True
+            if event.type == pygame.KEYUP:
+                racer.key_left = False
+                racer.key_right = False
         # pressed = pygame.key.get_pressed()
         # print pressed
         # if pressed[pygame.K_w]:
