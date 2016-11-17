@@ -60,11 +60,7 @@ def r_sprite(screen, SPRITES, width, height, resolution, road_width, sprite, sca
     if (clip_h < dest_h):
         # screen.drawImage(sprites, sprite.x, sprite.y, sprite.w, sprite.h -
         #                  (sprite.h * clip_h / dest_h), dest_x, dest_y, dest_w, dest_h - clip_h)
-        # sprite = pygame.transform.scale(sprite, (rect[2], int(rect[3] * clip_h / float(dest_h))))
-        # print sprite.get_rect()
-        # sprite = pygame.transform.scale(sprite, (int(dest_w), int(dest_h)))
         if dest_w > 500 or dest_h > 500:
-            # print dest_w, dest_h
             return
         s_sprite = pygame.transform.scale(sprite, (int(dest_w), int(dest_h)))
         # print dest_w, dest_h, scale
