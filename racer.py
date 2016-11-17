@@ -1,6 +1,8 @@
 import random
 import sys
 import math
+import numpy as np
+from PIL import Image
 
 import pygame
 from pygame import gfxdraw
@@ -85,6 +87,8 @@ class Racer(object):
         self.key_right = False
         self.key_faster = False
         self.key_slower = False
+
+        self.has_collision = True
 
         self.reset_road()
         return
@@ -344,7 +348,7 @@ class Racer(object):
         self.update_cars(dt, player_segment, player_w)
         self.position = util.increase(self.position, dt * self.speed, self.track_length)
 
-        self.key_faster = True
+        # self.key_faster = True
         if (self.key_left):
             self.player_x = self.player_x - dx * 1.5
         elif (self.key_right):
@@ -384,6 +388,7 @@ class Racer(object):
                     self.speed = int(car.speed * (float(car.speed) / self.speed))
                     self.position = util.increase(car.z, -self.player_z, self.track_length)
                     # todo: add has_collision = True
+                    self.has_collision = True
                     break
 
         self.player_x = util.limit(self.player_x, -3, 3)  # dont ever let it go too far out of bounds
@@ -511,27 +516,6 @@ class Racer(object):
         # sys.exit()
         return
 
-    def frame_step(self, action):
-        '''
-        param: action, np.array([3]), [left_foward, right_foward, forward]
-        '''
-        assert len(action) == 3
-        if action[0] == 1:
-            self.key_left = True
-            self.key_right = False
-            self.key_faster = True
-        elif action[1] == 1:
-            self.key_left = False
-            self.key_right = True
-            self.key_faster = True
-        elif action[2] == 1:
-            self.key_left = False
-            self.key_right = False
-            self.key_faster = True
-
-        reward, terminal = get_reward()
-        return
-
     def get_reward(self):
         '''
         return: (reward, terminal)
@@ -551,34 +535,58 @@ class Racer(object):
         penalty = 1.0 if inLane else lane_penalty
         return penalty, False
 
+    def frame_step(self, action):
+        '''
+        param: action, np.array([3]), [left_foward, right_foward, forward]
+        '''
+        assert len(action) == 3
+        if action[0] == 1:
+            self.key_left = True
+            self.key_right = False
+            self.key_faster = True
+        elif action[1] == 1:
+            self.key_left = False
+            self.key_right = True
+            self.key_faster = True
+        elif action[2] == 1:
+            self.key_left = False
+            self.key_right = False
+            self.key_faster = True
+
+        # execute the given action
+        self.update(self.step)
+        self.render_sprite()
+        pygame.display.update()
+
+        reward, terminal = self.get_reward()
+
+        image_data = []
+        image_data = pygame.surfarray.array3d(pygame.display.get_surface())
+        image_data = Image.fromarray(image_data).convert('L')
+        image_data = image_data.resize((84, 84), Image.ANTIALIAS)
+        return image_data, reward, terminal
+
 
 def main():
     racer = Racer()
     # print ballrect
     while True:
+        action = np.zeros([3])
+        action[2] = 1
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 sys.exit()
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_j:
-                    racer.key_left = True
+                    action[0] = 1
                 if event.key == pygame.K_l:
-                    racer.key_right = True
+                    action[1] = 1
+                # if event.key == pygame.K_i:
+                #     action[2] = 1
             if event.type == pygame.KEYUP:
-                racer.key_left = False
-                racer.key_right = False
-        # pressed = pygame.key.get_pressed()
-        # print pressed
-        # if pressed[pygame.K_w]:
-        #     print ("w is pressed")
-        # if pressed[pygame.K_s]:
-        #     print ("s is pressed")
+                action[2] = 1
 
-        racer.update(racer.step)
-        racer.render_sprite()
-        # racer.screen.blit(racer.img, ballrect)
-        # pygame.display.flip()
-        pygame.display.update()
+        image_data, reward, terminal = racer.frame_step(action)
     return
 
 
