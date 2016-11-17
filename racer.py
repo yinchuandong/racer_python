@@ -511,11 +511,50 @@ class Racer(object):
         # sys.exit()
         return
 
+    def frame_step(self, action):
+        '''
+        param: action, np.array([3]), [left_foward, right_foward, forward]
+        '''
+        assert len(action) == 3
+        if action[0] == 1:
+            self.key_left = True
+            self.key_right = False
+            self.key_faster = True
+        elif action[1] == 1:
+            self.key_left = False
+            self.key_right = True
+            self.key_faster = True
+        elif action[2] == 1:
+            self.key_left = False
+            self.key_right = False
+            self.key_faster = True
+
+        reward, terminal = get_reward()
+        return
+
+    def get_reward(self):
+        '''
+        return: (reward, terminal)
+        '''
+        lane_penalty = 0.5
+        if self.has_collision:
+            return -1.0, True
+
+        pos = abs(self.player_x)
+        if pos > 1.0:
+            return -1.0, True
+
+        if speed <= 10:
+            return -0.1, False
+
+        inLane = pos <= 0.1 or (pos >= 0.6 and pos <= 0.8)
+        penalty = 1.0 if inLane else lane_penalty
+        return penalty, False
+
 
 def main():
     racer = Racer()
     # print ballrect
-    # return
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
