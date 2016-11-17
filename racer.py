@@ -42,8 +42,6 @@ class Racer(object):
         global SPRITES
         SPRITES = preload()
         self.reset()
-
-        self.img = pygame.image.load('images/sprites/billboard01.png')
         return
 
     def reset(self):
@@ -348,9 +346,9 @@ class Racer(object):
 
         self.key_faster = True
         if (self.key_left):
-            self.player_x = self.player_x - dx
+            self.player_x = self.player_x - dx * 1.5
         elif (self.key_right):
-            self.player_x = self.player_x + dx
+            self.player_x = self.player_x + dx * 1.5
 
         if self.speed > 10:
             self.player_x = self.player_x - (dx * speed_percent * player_segment.curve * self.centrifugal)
@@ -401,6 +399,8 @@ class Racer(object):
         #         self.current_lap_time = 0
         #     else:
         #         self.current_lap_time += dt
+
+        self.fps_clock.tick(FPS)
         return
 
     def render_sprite(self):
@@ -417,7 +417,7 @@ class Racer(object):
         # print len(self.segments)
         # import sys
         # sys.exit()
-        self.draw_distance = 60
+        # self.draw_distance = 200
         for n in range(self.draw_distance):
             segment = self.segments[(base_segment.index + n) % len(self.segments)]
             segment.looped = segment.index < base_segment.index
@@ -514,7 +514,6 @@ class Racer(object):
 
 def main():
     racer = Racer()
-    ballrect = racer.img.get_rect()
     # print ballrect
     # return
     while True:
