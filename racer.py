@@ -344,7 +344,7 @@ class Racer(object):
         self.update_cars(dt, player_segment, player_w)
         self.position = util.increase(self.position, dt * self.speed, self.track_length)
 
-        # self.key_faster = True
+        self.key_faster = True
         if (self.key_left):
             self.player_x = self.player_x - dx
         elif (self.key_right):

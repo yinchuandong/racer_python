@@ -10,9 +10,15 @@ import sys
 
 def r_polygon(x1, y1, x2, y2, x3, y3, x4, y4, color):
     color = color * 4  # 4 points correspondingly
+    # pyglet.graphics.draw_indexed(
+    #     4, pyglet.gl.GL_TRIANGLES,
+    #     [0, 1, 2, 0, 2, 3],  # the index of points
+    #     ('v2f', (x1, y1, x2, y2, x3, y3, x4, y4)),
+    #     ('c3B', color),
+    # )
     pyglet.graphics.draw_indexed(
-        4, pyglet.gl.GL_TRIANGLES,
-        [0, 1, 2, 0, 2, 3],  # the index of points
+        4, pyglet.gl.GL_POLYGON,
+        [0, 1, 2, 3],  # the index of points
         ('v2f', (x1, y1, x2, y2, x3, y3, x4, y4)),
         ('c3B', color),
     )
