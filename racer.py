@@ -3,6 +3,7 @@ import sys
 import math
 
 import pyglet
+from pyglet.window import key
 
 from map import Map
 import util
@@ -28,7 +29,6 @@ ROAD.CURVE = Map({
 })
 
 game_window = pyglet.window.Window(SCREEN_WIDTH, SCREEN_HEIGHT)
-# pyglet.gl.glTranslatef(0, -SCREEN_HEIGHT, 0)
 
 
 class Racer(object):
@@ -60,7 +60,7 @@ class Racer(object):
         self.field_of_view = 100
         self.camera_height = 1000
         self.camera_depth = 1.0 / math.tan((self.field_of_view / 2.0) * math.pi / 180.0)
-        self.draw_distance = 300
+        self.draw_distance = 150
         self.player_sprite = pyglet.sprite.Sprite(img=SPRITES.PLAYER_STRAIGHT)
         self.player_x = 0
         self.player_z = self.camera_height * self.camera_depth
@@ -75,12 +75,19 @@ class Racer(object):
         self.off_road_limit = self.max_speed / 4
         self.total_cars = 200
 
+        self.score_label = pyglet.text.Label(text='score:', x=0, y=100)
+
         self.key_left = False
         self.key_right = False
         self.key_faster = False
         self.key_slower = False
 
+        self.has_collision = False
+
         self.reset_road()
+        # todo: for pyglet, on_draw is called before update
+        self.update(self.step)
+
         return
 
     def last_y(self):
@@ -279,7 +286,7 @@ class Racer(object):
         if car_segment.index - player_segment.index > self.draw_distance:
             return 0
 
-        lookahead, car_w = 20, car.sprite.width * SPRITES.SCALE
+        lookahead, car_w = 20, car.sprite.image.width * SPRITES.SCALE
         for i in range(1, lookahead):
             segment = self.segments[(car_segment.index + i) % len(self.segments)]
             if segment == player_segment and car.speed > self.speed \
@@ -294,7 +301,7 @@ class Racer(object):
 
             for j in range(len(segment.cars)):
                 other_car = segment.cars[j]
-                other_car_w = other_car.sprite.width * SPRITES.SCALE
+                other_car_w = other_car.sprite.image.width * SPRITES.SCALE
                 if car.speed > other_car.speed and util.overlap(car.offset, car_w, other_car.offset, other_car_w, 1.2):
                     if (other_car.offset > 0.5):
                         direction = -1
@@ -337,7 +344,7 @@ class Racer(object):
         self.update_cars(dt, player_segment, player_w)
         self.position = util.increase(self.position, dt * self.speed, self.track_length)
 
-        self.key_faster = True
+        # self.key_faster = True
         if (self.key_left):
             self.player_x = self.player_x - dx
         elif (self.key_right):
@@ -354,30 +361,37 @@ class Racer(object):
 
         # print 'step:', dt, 'speed:', self.speed, 'speed_percent:', speed_percent, 'max_speed:', self.max_speed
 
-        if self.player_x < -1 or self.player_x > 1:
-            if self.speed > self.off_road_limit:
-                self.speed = util.accelerate(self.speed, self.off_road_decel, dt)
-                for n in range(len(player_segment.sprites)):
-                    sprite = player_segment.sprites[n]
-                    sprite_w = sprite.source.width * SPRITES.SCALE
-                    # todo: check sprite_w/2 or 2.0
-                    if (util.overlap(self.player_x, player_w, sprite.offset + sprite_w / 2.0 * (1 if sprite.offset > 0 else -1), sprite_w)):
-                        self.speed = int(self.max_speed / 5.0)
-                        self.position = util.increase(player_segment.p1.world.z, -self.player_z, self.track_length)
-                        break
+        # if self.player_x < -1 or self.player_x > 1:
+        #     if self.speed > self.off_road_limit:
+        #         self.speed = util.accelerate(self.speed, self.off_road_decel, dt)
+        #         for n in range(len(player_segment.sprites)):
+        #             sprite = player_segment.sprites[n]
+        #             sprite_w = sprite.source.width * SPRITES.SCALE
+        #             # todo: check sprite_w/2 or 2.0
+        #             if (util.overlap(self.player_x, player_w, sprite.offset + sprite_w / 2.0 * (1 if sprite.offset > 0 else -1), sprite_w)):
+        #                 self.speed = int(self.max_speed / 5.0)
+        #                 self.position = util.increase(player_segment.p1.world.z, -self.player_z, self.track_length)
+        #                 break
 
         #  check collision
         for n in range(len(player_segment.cars)):
             car = player_segment.cars[n]
-            car_w = car.sprite.width * SPRITES.SCALE
+            car_w = car.sprite.image.width * SPRITES.SCALE
             if self.speed > car.speed:
                 if (util.overlap(self.player_x, player_w, car.offset, car_w, 0.8)):
                     self.speed = int(car.speed * (float(car.speed) / self.speed))
                     self.position = util.increase(car.z, -self.player_z, self.track_length)
                     # todo: add has_collision = True
+                    self.has_collision = True
+                    self.score_label.text = ('%f, %f, %f, %f') % (self.player_x, player_w, car.offset, car_w)
+                    # print self.player_x, player_w, car.offset, car_w, car.sprite.image.width
+                    # print '---------'
+                    # print car
+                    # 0.0 0.3 -0.161809412285 1.5525 414
+                    # sys.exit()
                     break
 
-        self.player_x = util.limit(self.player_x, -3, 3)  # dont ever let it go too far out of bounds
+        self.player_x = util.limit(self.player_x, -1, 1)  # dont ever let it go too far out of bounds
         self.speed = util.limit(self.speed, 0, self.max_speed)  # or exceed self.max_speed
 
         # self.sky_offset  = util.increase(self.sky_offset,  self.sky_speed  * player_segment.curve * (self.position - start_position) / self.segment_length, 1)
@@ -390,6 +404,9 @@ class Racer(object):
         #         self.current_lap_time = 0
         #     else:
         #         self.current_lap_time += dt
+        
+        # self.score_label.text = ('player_x:%f') % (self.player_x)
+        # self.score_label.text = ('collide:%r') % (self.has_collision)
         return
 
     def render_sprite(self):
@@ -406,7 +423,6 @@ class Racer(object):
 
         # print base_segment.index, self.position
         # sys.exit()
-        self.draw_distance = 50
         for n in range(self.draw_distance):
             segment = self.segments[(base_segment.index + n) % len(self.segments)]
             segment.looped = segment.index < base_segment.index
@@ -443,9 +459,10 @@ class Racer(object):
             # print 'p1:', segment.p1.screen.y, 'p2:', segment.p2.screen.y, \
             #     'p.c.z:', segment.p1.camera.z, 'self.c_d:', self.camera_depth, \
             #     'maxy:', maxy
+            # sys.exit()
             if ((segment.p1.camera.z <= self.camera_depth)  # behind us
-                # or (segment.p2.screen.y > segment.p1.screen.y)  # back face cull
-                # or (segment.p2.screen.y > maxy)  # clip by hill
+                or (SCREEN_HEIGHT - segment.p2.screen.y >= SCREEN_HEIGHT - segment.p1.screen.y)  # back face cull
+                or (SCREEN_HEIGHT - segment.p2.screen.y >= maxy)  # clip by hill
             ):
                 # print 'p1:', segment.p1.screen.y, 'p2:', segment.p2.screen.y, \
                 #     'p.c.z:', segment.p1.camera.z, 'self.c_d:', self.camera_depth, \
@@ -464,22 +481,22 @@ class Racer(object):
                 segment.color
             )
 
-            maxy = segment.p1.screen.y
+            maxy = SCREEN_HEIGHT - segment.p1.screen.y
 
         # end for
         # return
         for n in reversed(range(self.draw_distance - 1)):
             segment = self.segments[(base_segment.index + n) % len(self.segments)]
 
-            # for i in range(len(segment.cars)):
-            #     car = segment.cars[i]
-            #     sprite_scale = util.interpolate(segment.p1.screen.scale, segment.p2.screen.scale, car.percent)
-            #     sprite_x = util.interpolate(segment.p1.screen.x, segment.p2.screen.x, car.percent) + \
-            #         (sprite_scale * car.offset * self.road_width * SCREEN_WIDTH / 2)
-            #     sprite_y = util.interpolate(segment.p1.screen.y, segment.p2.screen.y, car.percent)
-            #     render.r_sprite(SPRITES, SCREEN_WIDTH, SCREEN_HEIGHT, self.resolution,
-            #                     self.road_width, car.sprite, sprite_scale, sprite_x, sprite_y,
-            #                     -0.5, -1, segment.clip)
+            for i in range(len(segment.cars)):
+                car = segment.cars[i]
+                sprite_scale = util.interpolate(segment.p1.screen.scale, segment.p2.screen.scale, car.percent)
+                sprite_x = util.interpolate(segment.p1.screen.x, segment.p2.screen.x, car.percent) + \
+                    (sprite_scale * car.offset * self.road_width * SCREEN_WIDTH / 2)
+                sprite_y = util.interpolate(segment.p1.screen.y, segment.p2.screen.y, car.percent)
+                render.r_sprite(SPRITES, SCREEN_WIDTH, SCREEN_HEIGHT, self.resolution,
+                                self.road_width, car.sprite, sprite_scale, sprite_x, sprite_y,
+                                -0.5, -1, segment.clip)
 
             for i in range(len(segment.sprites)):
                 sprite = segment.sprites[i]
@@ -490,18 +507,17 @@ class Racer(object):
                                 self.road_width, sprite.source, sprite_scale, sprite_x, sprite_y,
                                 (-1 if sprite.offset < 0 else 0), -1, segment.clip)
 
-            # if segment == player_segment:
-            #     p_height = (SCREEN_HEIGHT / 2.0) - (self.camera_depth / self.player_z * util.interpolate(
-            #         player_segment.p1.camera.y, player_segment.p2.camera.y, player_percent) * SCREEN_HEIGHT / 2)
-            #     p_height = SCREEN_HEIGHT - p_height + self.player_sprite.height
-            #     render.r_player(
-            #         SPRITES, self.player_sprite, SCREEN_WIDTH, SCREEN_HEIGHT, self.resolution, self.road_width,
-            #         float(self.speed) / self.max_speed, float(self.camera_depth) / self.player_z,
-            #         SCREEN_WIDTH / 2,
-            #         p_height,
-            #         self.speed * (-1 if self.key_left else 1 if self.key_right else 0),
-            #         player_segment.p2.world.y - player_segment.p1.world.y
-            #     )
+            if segment == player_segment:
+                p_height = (SCREEN_HEIGHT / 2.0) + (self.camera_depth / self.player_z * util.interpolate(
+                    player_segment.p1.camera.y, player_segment.p2.camera.y, player_percent) * SCREEN_HEIGHT / 2)
+                render.r_player(
+                    SPRITES, self.player_sprite, SCREEN_WIDTH, SCREEN_HEIGHT, self.resolution, self.road_width,
+                    float(self.speed) / self.max_speed, float(self.camera_depth) / self.player_z,
+                    SCREEN_WIDTH / 2,
+                    p_height,
+                    self.speed * (-1 if self.key_left else 1 if self.key_right else 0),
+                    player_segment.p2.world.y - player_segment.p1.world.y
+                )
         # import sys
         # sys.exit()
         return
@@ -515,12 +531,30 @@ fps_display = pyglet.clock.ClockDisplay()
 def on_draw():
     game_window.clear()
     racer.render_sprite()
+    racer.score_label.draw()
     fps_display.draw()
     # my_car.draw()
     return
 
 def update(dt):
     my_car.x += 1
+    return
+
+@game_window.event
+def on_key_press(symbol, modifiers):
+    if symbol == key.J:
+        racer.key_left = True
+    elif symbol == key.L:
+        racer.key_right = True
+    elif symbol == key.I:
+        racer.key_faster = True
+    return
+
+@game_window.event
+def on_key_release(symbol, modifiers):
+    racer.key_left = False
+    racer.key_right = False
+    racer.key_faster = False
     return
 
 def test():
@@ -530,7 +564,7 @@ def test():
 
 
 if __name__ == '__main__':
-    pyglet.clock.schedule_interval(racer.update, 1 / 120.0)
+    pyglet.clock.schedule_interval(racer.update, 1 / 60.0)
     # pyglet.clock.schedule_interval(update, 1 / 120.0)
     pyglet.app.run()
     # test()
