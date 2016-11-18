@@ -560,7 +560,9 @@ class Racer(object):
 
         reward, terminal = self.get_reward()
 
-        image_data = []
+        if terminal:
+            self.reset()
+
         image_data = pygame.surfarray.array3d(pygame.display.get_surface())
         image_data = Image.fromarray(image_data).convert('L')
         image_data = image_data.resize((84, 84), Image.ANTIALIAS)

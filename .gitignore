@@ -1,3 +1,4 @@
 *.pyc
 *.js
 .DS_Store
+*tmp
