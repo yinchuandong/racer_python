@@ -88,7 +88,7 @@ class Racer(object):
         self.key_faster = False
         self.key_slower = False
 
-        self.has_collision = True
+        self.has_collision = False
 
         self.reset_road()
         return
@@ -528,12 +528,12 @@ class Racer(object):
         if pos > 1.0:
             return -1.0, True
 
-        if speed <= 10:
+        if self.speed <= 10:
             return -0.1, False
 
         inLane = pos <= 0.1 or (pos >= 0.6 and pos <= 0.8)
         penalty = 1.0 if inLane else lane_penalty
-        return penalty, False
+        return penalty * self.speed / self.max_speed, False
 
     def frame_step(self, action):
         '''
